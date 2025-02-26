@@ -1,0 +1,84 @@
+{
+  "kind": "collectionType",
+  "collectionName": "events",
+  "info": {
+    "singularName": "event",
+    "pluralName": "events",
+    "displayName": "event",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "title": {
+      "type": "string"
+    },
+    "date": {
+      "type": "date"
+    },
+    "location": {
+      "type": "string"
+    },
+    "state": {
+      "type": "enumeration",
+      "enum": [
+        "pending",
+        "active",
+        "previous"
+      ]
+    },
+    "shoppinglist": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "group": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "grade": {
+      "type": "json"
+    },
+    "time": {
+      "type": "json"
+    },
+    "deliveryDate": {
+      "type": "date"
+    },
+    "zip": {
+      "type": "biginteger"
+    },
+    "city": {
+      "type": "string"
+    },
+    "usstate": {
+      "type": "string"
+    },
+    "deliveryAddress": {
+      "type": "string"
+    },
+    "deliveryTime": {
+      "type": "json"
+    },
+    "fundingDeadline": {
+      "type": "datetime"
+    },
+    "groupReuse": {
+      "type": "enumeration",
+      "enum": [
+        "yes",
+        "no"
+      ]
+    },
+    "groupTitle": {
+      "type": "string"
+    },
+    "owner": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::event.event"
+    }
+  }
+}

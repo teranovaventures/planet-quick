@@ -1,0 +1,1 @@
+"use strict";var t=require("react"),e=require("./IntlContext-381f3ce4.js");function r(){const r=t.useContext(e.IntlContext);if(!r)throw new Error(void 0);return r}exports.useIntlContext=r,exports.useLocale=function(){return r().locale};

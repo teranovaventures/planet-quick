@@ -1,0 +1,2 @@
+export declare const COOKIE_LOCALE_NAME = "NEXT_LOCALE";
+export declare const LOCALE_SEGMENT_NAME = "locale";
