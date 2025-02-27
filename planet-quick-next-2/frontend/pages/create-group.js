@@ -1,32 +1,25 @@
-// pages/create-group.js
 import React, { useState } from 'react'
-import Navbar from '../components/navbar'
 
-export default function CreateGroupPage(props) {
+export default function CreateGroupPage() {
   // ------------------------------
   // 1) STATE
   // ------------------------------
-  // For the group name/title
   const [groupTitle, setGroupTitle] = useState('')
-  // Array of members, each with { memberName, memberEmail } for example
   const [members, setMembers] = useState([{ memberName: '', memberEmail: '' }])
-
-  // Example state for a “search bar” at the top (like your Instacart search)
   const [searchValue, setSearchValue] = useState('')
   const [suggestions, setSuggestions] = useState([])
 
-  // Strapi endpoint & API key
+  // Strapi API
   const API_URL = 'http://localhost:1337/api/groups'
-  const STRAPI_API_KEY = '7edc7cdec8951ea06e187b6f6627c4d8d9c6515023e2ef0a4bfd061fdd6adcc8924c23e520e813b536304458ff18a2504281b3cacd5df97e668b5a64e3c8de97342a1834462e66ed9bd185d575bffa8719902407cbd46e16942c919a1840c45e5de57e3a33e6ca7a28e98c941d4e7ee8316f23a2b62754a5d867ea9e443267b9'
+  const STRAPI_API_KEY = 'YOUR_STRAPI_API_KEY_HERE' // Replace with valid API key
 
   // ------------------------------
-  // 2) AUTOCOMPLETE (dummy logic)
+  // 2) AUTOCOMPLETE
   // ------------------------------
   const handleSearchChange = (e) => {
     const query = e.target.value
     setSearchValue(query)
 
-    // Example dummy suggestions. Replace with your real API call if needed.
     if (query.length > 2) {
       const dummy = [
         { name: 'John Smith', email: 'john@example.com' },
@@ -43,13 +36,7 @@ export default function CreateGroupPage(props) {
   }
 
   const handleSelectSuggestion = (person) => {
-    // Insert a new member row with the selected suggestion
-    const newMember = {
-      memberName: person.name,
-      memberEmail: person.email
-    }
-    setMembers((prev) => [...prev, newMember])
-    // Clear the search
+    setMembers((prev) => [...prev, { memberName: person.name, memberEmail: person.email }])
     setSearchValue('')
     setSuggestions([])
   }
@@ -68,8 +55,7 @@ export default function CreateGroupPage(props) {
   }
 
   const handleRemoveMember = (index) => {
-    const newMembers = members.filter((_, i) => i !== index)
-    setMembers(newMembers)
+    setMembers(members.filter((_, i) => i !== index))
   }
 
   // ------------------------------
@@ -78,17 +64,11 @@ export default function CreateGroupPage(props) {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    // Format members for Strapi
-    const membersFormatted = members.map((m) => ({
-      memberName: m.memberName,
-      memberEmail: m.memberEmail
-    }))
-
     const groupData = {
       data: {
-        title: groupTitle, // or rename “title” to “groupName” in your Strapi model
-        state: 'pending',  // or any default status you prefer
-        members: membersFormatted
+        title: groupTitle,
+        state: 'pending',
+        members
       }
     }
 
@@ -105,17 +85,15 @@ export default function CreateGroupPage(props) {
       const json = await res.json()
       if (res.ok) {
         alert('Group created successfully!')
-        console.log('Group response:', json)
-        // Reset
         setGroupTitle('')
         setMembers([{ memberName: '', memberEmail: '' }])
       } else {
         console.error('Error creating group:', json)
-        alert('Failed to create group. Check console for details.')
+        alert('Failed to create group.')
       }
     } catch (error) {
       console.error('Error:', error)
-      alert('Error creating group. See console for details.')
+      alert('Error creating group.')
     }
   }
 
@@ -125,21 +103,17 @@ export default function CreateGroupPage(props) {
   return (
     <>
       <div className="create-group-container">
-        {/* Navbar to handle sign-in modal, etc. Pass setIsModalOpen if needed */}
-        <Navbar {...props} />
-
         <div className="page-background">
-          {/* Tilted tile with accent backgrounds, same as create-shopping-list */}
           <div className="createevents-accent2-bg">
             <div className="createevents-accent1-bg">
               <div className="createevents-container2">
                 <div className="createevents-content">
                   <h2 className="thq-heading-2">Create Your Guest List</h2>
                   <p className="thq-body-large">
-                    Add new group members by searching data, or add them manually below.
+                    Add new group members by searching or manually entering their details below.
                   </p>
 
-                  {/* (A) Autocomplete search input */}
+                  {/* Autocomplete Search */}
                   <div className="autocomplete-section">
                     <input
                       type="text"
@@ -163,7 +137,7 @@ export default function CreateGroupPage(props) {
                     )}
                   </div>
 
-                  {/* The main form */}
+                  {/* Main Form */}
                   <form onSubmit={handleSubmit} className="group-form">
                     <label>Name Your Group</label>
                     <input
@@ -194,7 +168,6 @@ export default function CreateGroupPage(props) {
                           }
                           required
                         />
-
                         <button
                           type="button"
                           onClick={() => handleRemoveMember(index)}
@@ -205,11 +178,7 @@ export default function CreateGroupPage(props) {
                       </div>
                     ))}
 
-                    <button
-                      type="button"
-                      onClick={handleAddMember}
-                      className="add-member-button"
-                    >
+                    <button type="button" onClick={handleAddMember} className="add-member-button">
                       + Add Another Member
                     </button>
 
@@ -237,63 +206,34 @@ export default function CreateGroupPage(props) {
           align-items: center;
           justify-content: center;
           background-size: cover;
-          /* Same background as create-shopping-list, or change if desired */
           background-image: url("/dorritos.jpeg");
         }
-
-        /* Outer tilt & accent background */
         .createevents-accent2-bg {
-          gap: var(--dl-space-space-oneandhalfunits);
           display: flex;
-          transition: 0.3s;
           align-items: center;
-          border-radius: var(--dl-radius-radius-cardradius);
-          justify-content: space-between;
+          justify-content: center;
           background-color: var(--dl-color-theme-accent2);
-          /* Slight tilt (optional) */
-          transform: rotateZ(1deg);
         }
-        .createevents-accent2-bg:hover {
-          transform: scale(1.02) rotateZ(1deg);
-        }
-
-        /* Inner accent background */
         .createevents-accent1-bg {
           width: 100%;
           display: flex;
           align-items: center;
-          border-radius: var(--dl-radius-radius-cardradius);
-          justify-content: space-between;
+          justify-content: center;
           background-color: var(--dl-color-theme-accent1);
-          /* Opposite tilt */
-          transform: rotateZ(-2deg);
         }
-
-        /* Container that holds the main content */
         .createevents-container2 {
-          gap: var(--dl-space-space-threeunits);
           width: 100%;
           display: flex;
-          box-shadow: 8px 8px 13px 0px #2b2a2a;
-          transition: 0.3s;
           align-items: center;
-          padding: var(--dl-space-space-sixunits) var(--dl-space-space-fourunits);
+          padding: var(--dl-space-space-sixunits);
           border-radius: var(--dl-radius-radius-cardradius);
+          box-shadow: 8px 8px 13px 0px #2b2a2a;
         }
-        .createevents-container2:hover {
-          color: var(--dl-color-theme-neutral-light);
-          background-color: var(--dl-color-theme-neutral-dark);
-        }
-
         .createevents-content {
-          gap: var(--dl-space-space-oneandhalfunits);
           display: flex;
           flex-direction: column;
-          align-items: flex-start;
           width: 100%;
         }
-
-        /* Autocomplete search */
         .autocomplete-section {
           position: relative;
           width: 100%;
@@ -301,89 +241,33 @@ export default function CreateGroupPage(props) {
         .search-bar {
           width: 100%;
           padding: 10px;
-          margin-bottom: 10px;
           border: 1px solid #ddd;
-          border-radius: var(--dl-radius-radius-buttonradius);
-          font-size: 16px;
-          color: #666;
+          border-radius: 4px;
         }
         .suggestions-container {
           position: absolute;
-          top: 50px;
-          left: 0;
-          right: 0;
+          top: 100%;
           background: #fff;
           border: 1px solid #ddd;
-          border-radius: 4px;
-          z-index: 10;
           max-height: 200px;
           overflow-y: auto;
+          z-index: 10;
         }
         .suggestion-item {
           padding: 8px;
           cursor: pointer;
         }
-        .suggestion-item:hover {
-          background-color: #f2f2f2;
-        }
-
-        /* Form styling */
         .group-form {
           display: flex;
           flex-direction: column;
           gap: 1rem;
-          margin-top: 1rem;
-          text-align: left;
           width: 100%;
-        }
-        .group-form label {
-          font-weight: bold;
         }
         .group-form input {
           padding: 0.5rem;
           border: 1px solid #ddd;
-          border-radius: var(--dl-radius-radius-buttonradius);
+          border-radius: 4px;
           font-size: 16px;
-        }
-
-        .manual-entry-heading {
-          margin-top: 2rem;
-          margin-bottom: 1rem;
-          font-size: 20px;
-          font-weight: bold;
-        }
-        .single-member {
-          margin-bottom: 1rem;
-        }
-        .add-member-button {
-          background: none;
-          border: none;
-          color: var(--dl-color-theme-primary1);
-          cursor: pointer;
-          font-size: 16px;
-          text-align: left;
-          padding: 0;
-        }
-        .remove-member-button {
-          background: none;
-          border: none;
-          color: red;
-          cursor: pointer;
-          font-size: 14px;
-          margin-top: 0.5rem;
-        }
-
-        /* “Create Guest List” button */
-        .thq-button-filled {
-          padding: 0.75rem 1.5rem;
-          border-radius: 46px;
-          background-color: var(--dl-color-theme-primary1, #c02425);
-          color: #fff;
-          border: none;
-          cursor: pointer;
-        }
-        .thq-button-filled:hover {
-          opacity: 0.9;
         }
       `}</style>
     </>
