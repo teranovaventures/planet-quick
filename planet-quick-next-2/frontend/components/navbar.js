@@ -1,85 +1,55 @@
-// components/navbar.js
-import React, { useState, Fragment } from 'react'
-import PropTypes from 'prop-types'
-import Link from 'next/link'
+import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
 
-const Navbar = (props) => {
-  const [dropdownOpen, setDropdownOpen] = useState(false)
+const Navbar = ({ user, setUser, setIsModalOpen }) => {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const router = useRouter();
 
-  // Close the dropdown if the user clicks anywhere in the header (outside the dropdown)
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
   const handleOutsideClick = () => {
-    if (dropdownOpen) setDropdownOpen(false)
-  }
+    if (dropdownOpen) setDropdownOpen(false);
+  };
 
-  // Toggle the dropdown when “more” is clicked
   const toggleDropdown = (e) => {
-    e.stopPropagation()
-    setDropdownOpen(!dropdownOpen)
-  }
+    e.stopPropagation();
+    setDropdownOpen(!dropdownOpen);
+  };
 
-  // Placeholder for sign-out functionality
   const handleSignOut = (e) => {
-    e.preventDefault()
-    console.log('Signing out...')
-    // Add your sign-out logic here.
-  }
-
-  // Smooth-scroll to the #active-events section when Events is clicked
-  const scrollToEvents = (e) => {
-    e.preventDefault()
-    const el = document.getElementById('active-events')
-    if (el) el.scrollIntoView({ behavior: 'smooth' })
-  }
+    e.preventDefault();
+    localStorage.removeItem('user');
+    localStorage.removeItem('jwt');
+    setUser(null);
+    router.push('/');
+  };
 
   return (
-    // Outer header that closes dropdown when clicking outside
     <header className="navbar-container1" onClick={handleOutsideClick}>
-      <div
-        data-thq="thq-navbar"
-        className="navbar-navbar-interactive"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Logo on left */}
-        <img
-          alt={props.imageAlt}
-          src={props.imageSrc}
-          className="navbar-image"
-        />
+      <div data-thq="thq-navbar" className="navbar-navbar-interactive" onClick={(e) => e.stopPropagation()}>
+        <img alt="Logo" src="/tera-nova-logo.png" className="navbar-image" />
 
-        {/* Desktop Menu */}
         <div data-thq="thq-navbar-nav" className="navbar-desktop-menu">
           <nav className="navbar-links1">
-            {/* Home */}
             <Link href="/" legacyBehavior>
-              <a className="navbar-link11 thq-body-small thq-link">
-                {props.link1 ?? <span className="navbar-text14">Home</span>}
-              </a>
+              <a className="navbar-link11 thq-body-small thq-link">Home</a>
             </Link>
 
-            {/* Events → scroll to #active-events */}
-            <a
-              href="#active-events"
-              className="thq-body-small thq-link"
-              onClick={scrollToEvents}
-            >
-              {props.link2 ?? <span className="navbar-text21">Events</span>}
-            </a>
+            <a href="#active-events" className="thq-body-small thq-link">Events</a>
 
-            {/* Reports */}
             <Link href="/reports" legacyBehavior>
-              <a className="navbar-link31 thq-body-small thq-link">
-                {props.link3 ?? <span className="navbar-text27">Reports</span>}
-              </a>
+              <a className="navbar-link31 thq-body-small thq-link">Reports</a>
             </Link>
 
-            {/* “more” dropdown trigger */}
-            <div
-              className="navbar-link4-dropdown-trigger"
-              onClick={toggleDropdown}
-            >
-              <span className="thq-body-small thq-link">
-                {props.link4 ?? <span className="navbar-text20">More</span>}
-              </span>
+            <div className="navbar-link4-dropdown-trigger" onClick={toggleDropdown}>
+              <span className="thq-body-small thq-link">More</span>
               <div className="navbar-icon-container1">
                 {dropdownOpen ? (
                   <div className="navbar-container2">
@@ -96,67 +66,42 @@ const Navbar = (props) => {
                 )}
               </div>
 
-              {/* Dropdown menu (desktop) */}
               {dropdownOpen && (
-                <div
-                  className="navbar-dropdown"
-                  onClick={(e) => e.stopPropagation()}
-                >
+                <div className="navbar-dropdown" onClick={(e) => e.stopPropagation()}>
                   <Link href="/pending-events" legacyBehavior>
-                    <a className="dropdown-menu-item">
-                      <span className="dropdown-menu-text">Pending Events</span>
-                    </a>
+                    <a className="dropdown-menu-item">Pending Events</a>
                   </Link>
                   <Link href="/admin" legacyBehavior>
-                    <a className="dropdown-menu-item">
-                      <span className="dropdown-menu-text">Admin</span>
-                    </a>
+                    <a className="dropdown-menu-item">Admin</a>
                   </Link>
-                  <a
-                    href="#signout"
-                    className="dropdown-menu-item"
-                    onClick={handleSignOut}
-                  >
-                    <span className="dropdown-menu-text">Sign Out</span>
-                  </a>
+                  {user && (
+                    <a href="#" className="dropdown-menu-item" onClick={handleSignOut}>
+                      <span className="dropdown-menu-text">Sign Out</span>
+                    </a>
+                  )}
                 </div>
               )}
             </div>
           </nav>
 
-          {/* Right side buttons */}
           <div className="navbar-buttons1">
-            <button
-              className="navbar-action11 thq-button-animated thq-button-filled"
-              onClick={() => console.log('Get Started clicked')}
-            >
-              <span>
-                {props.action1 ?? (
-                  <span className="navbar-text26">Get Started</span>
-                )}
-              </span>
-            </button>
-            <button
-              className="navbar-action21 thq-button-animated thq-button-outline"
-              onClick={() => props.setIsModalOpen(true)}
-            >
-              <span>
-                {props.action2 ?? (
-                  <span className="navbar-text23">Sign In</span>
-                )}
-              </span>
-            </button>
+            {!user ? (
+              <>
+                <button className="navbar-action11 thq-button-animated thq-button-filled" onClick={() => router.push('/sign-up')}>
+                  <span>Get Started</span>
+                </button>
+                <button className="navbar-action21 thq-button-animated thq-button-outline" onClick={() => setIsModalOpen(true)}>
+                  <span>Sign In</span>
+                </button>
+              </>
+            ) : (
+              <div className="profile-menu">
+                <span className="profile-icon">👤</span>
+              </div>
+            )}
           </div>
         </div>
-
-        {/* Mobile burger icon (hidden on desktop) */}
-        <div data-thq="thq-burger-menu" className="navbar-burger-menu">
-          <svg viewBox="0 0 1024 1024" className="navbar-icon14">
-            <path d="M128 554.667h768c23.552 0 42.667-19.115 42.667-42.667s-19.115-42.667-42.667-42.667h-768c-23.552 0-42.667 19.115-42.667 42.667s19.115 42.667 42.667 42.667zM128 298.667h768c23.552 0 42.667-19.115 42.667-42.667s-19.115-42.667-42.667-42.667h-768c-23.552 0-42.667 19.115-42.667 42.667s19.115 42.667 42.667 42.667zM128 810.667h768c23.552 0 42.667-19.115 42.667-42.667s-19.115-42.667-42.667-42.667h-768c-23.552 0-42.667 19.115-42.667 42.667s19.115 42.667 42.667 42.667z"></path>
-          </svg>
-        </div>
       </div>
-
       {/* Styles */}
       <style jsx>{`
         .navbar-container1 {
