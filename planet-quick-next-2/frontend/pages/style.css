@@ -875,6 +875,15 @@
   background: white;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
   text-align: center;
+  transition: 0.3s ease-in-out;
+  border: 2px solid transparent;
+}
+
+/* ✅ Hover Effect */
+.sign-up-box:hover {
+  transform: rotateZ(3deg);
+  box-shadow: 10px 10px 25px rgba(0, 0, 0, 0.3); /* ✅ Stronger tilt & shadow */
+  border: 2px solid black;
 }
 
 .sign-up-title {
@@ -945,4 +954,217 @@
 .sign-up-footer {
   font-size: 14px;
   margin-top: 10px;
+}
+
+.sign-in-link {
+  color: var(--dl-color-theme-primary1);
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.sign-in-link:hover {
+  text-decoration: underline;
+}
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* ✅ Darker background when modal is open */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  text-align: center;
+}
+delete-account-button {
+  background-color: red;
+  color: white;
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.delete-confirmation {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid red;
+  background-color: #fff5f5;
+  text-align: center;
+}
+
+.delete-confirmation button {
+  margin: 5px;
+}
+
+.confirmation-message {
+  color: green;
+  font-weight: bold;
+}
+/* ✅ Profile Page Styling (Matches Create Group) */
+/* ✅ Profile Page Styling */
+/* ✅ Profile Page Styling */
+.profile-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-size: cover;
+  margin-top: -50px;
+}
+
+.profile-accent2-bg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--dl-color-theme-accent2);
+  transform: rotateZ(1deg);
+  transition: 0.3s;
+  border-radius: 46px;
+}
+
+.profile-accent1-bg {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--dl-color-theme-accent1);
+  transform: rotateZ(-2deg);
+  border-radius: 46px;
+}
+
+.profile-tile {
+  width: 750px;
+  padding: 35px;
+  text-align: center;
+  background-color: var(--dl-color-theme-accent1);
+  border-radius: 46px;
+  box-shadow: 10px 10px 15px rgba(0, 0, 0, 0.2);
+  transition: 0.3s;
+}
+
+.profile-tile:hover {
+  transform: scale(1.05);
+  background-color: black !important;
+  color: white !important;
+  transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(3deg) skew(0deg, 0deg);
+
+}
+
+.profile-title {
+  font-size: 24px;
+  margin-bottom: 15px;
+  font-weight: bold;
+}
+
+.profile-subtitle {
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: 20px;
+}
+
+label {
+  display: block;
+  text-align: left;
+  font-weight: bold;
+  margin: 10px 0 5px;
+}
+
+input, select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  margin-bottom: 10px;
+}
+
+.save-profile-button, .save-address-button {
+  background-color: rgb(44, 123, 229);
+  color: white;
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.delete-account-button {
+  position: absolute;
+  right: 100px;
+  bottom: 30px;
+  background-color: red;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.delete-account-button:hover {
+  background-color: darkred;
+}
+
+.small-add-button {
+  margin-top: 10px;
+  font-size: 14px;
+  padding: 6px 10px;
+  background-color: var(--dl-color-theme-primary1);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.small-add-button:hover {
+  background-color: var(--dl-color-theme-primary2);
+}
+
+.profile-update-button {
+  position: absolute;
+  bottom: 30px;
+  right: 30px;
+  padding: 12px 16px;
+  font-size: 16px;
+  border-radius: 8px;
+}
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+.modal-buttons button {
+  padding: 8px 16px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s ease-in-out;
+}
+
+.modal-buttons button:hover {
+  opacity: 0.8;
+}
+
+.modal-buttons .cancel-button {
+  background-color: #ddd;
+  color: black;
+}
+
+.modal-buttons .save-button {
+  background-color: var(--dl-color-theme-primary1);
+  color: white;
+}
+
+.modal-buttons .save-button:hover {
+  background-color: var(--dl-color-theme-primary2);
 }

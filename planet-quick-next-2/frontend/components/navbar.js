@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 
 const Navbar = ({ user, setUser, setIsModalOpen }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -13,15 +14,6 @@ const Navbar = ({ user, setUser, setIsModalOpen }) => {
       setUser(JSON.parse(storedUser));
     }
   }, []);
-
-  const handleOutsideClick = () => {
-    if (dropdownOpen) setDropdownOpen(false);
-  };
-
-  const toggleDropdown = (e) => {
-    e.stopPropagation();
-    setDropdownOpen(!dropdownOpen);
-  };
 
   const handleSignOut = (e) => {
     e.preventDefault();
@@ -32,56 +24,37 @@ const Navbar = ({ user, setUser, setIsModalOpen }) => {
   };
 
   return (
-    <header className="navbar-container1" onClick={handleOutsideClick}>
-      <div data-thq="thq-navbar" className="navbar-navbar-interactive" onClick={(e) => e.stopPropagation()}>
+    <header className="navbar-container1">
+      <div className="navbar-navbar-interactive">
         <img alt="Logo" src="/tera-nova-logo.png" className="navbar-image" />
 
-        <div data-thq="thq-navbar-nav" className="navbar-desktop-menu">
+        <div className="navbar-desktop-menu">
           <nav className="navbar-links1">
             <Link href="/" legacyBehavior>
-              <a className="navbar-link11 thq-body-small thq-link">Home</a>
+              <a className="navbar-link">Home</a>
             </Link>
-
-            <a href="#active-events" className="thq-body-small thq-link">Events</a>
-
+            <Link href="/events" legacyBehavior>
+              <a className="navbar-link">Events</a>
+            </Link>
             <Link href="/reports" legacyBehavior>
-              <a className="navbar-link31 thq-body-small thq-link">Reports</a>
+              <a className="navbar-link">Reports</a>
             </Link>
 
-            <div className="navbar-link4-dropdown-trigger" onClick={toggleDropdown}>
-              <span className="thq-body-small thq-link">More</span>
-              <div className="navbar-icon-container1">
-                {dropdownOpen ? (
-                  <div className="navbar-container2">
-                    <svg viewBox="0 0 1024 1024" className="navbar-icon10">
-                      <path d="M298 426h428l-214 214z"></path>
-                    </svg>
-                  </div>
-                ) : (
-                  <div className="navbar-container3">
-                    <svg viewBox="0 0 1024 1024" className="navbar-icon12">
-                      <path d="M426 726v-428l214 214z"></path>
-                    </svg>
+            {user && (
+              <div className="navbar-link4-dropdown-trigger" onClick={() => setDropdownOpen(!dropdownOpen)}>
+                <span className="thq-body-small thq-link">More</span>
+                {dropdownOpen && (
+                  <div className="navbar-dropdown">
+                    <Link href="/pending-events" legacyBehavior>
+                      <a className="dropdown-menu-item">Pending Events</a>
+                    </Link>
+                    <Link href="/reports" legacyBehavior>
+                      <a className="dropdown-menu-item">Reports</a>
+                    </Link>
                   </div>
                 )}
               </div>
-
-              {dropdownOpen && (
-                <div className="navbar-dropdown" onClick={(e) => e.stopPropagation()}>
-                  <Link href="/pending-events" legacyBehavior>
-                    <a className="dropdown-menu-item">Pending Events</a>
-                  </Link>
-                  <Link href="/admin" legacyBehavior>
-                    <a className="dropdown-menu-item">Admin</a>
-                  </Link>
-                  {user && (
-                    <a href="#" className="dropdown-menu-item" onClick={handleSignOut}>
-                      <span className="dropdown-menu-text">Sign Out</span>
-                    </a>
-                  )}
-                </div>
-              )}
-            </div>
+            )}
           </nav>
 
           <div className="navbar-buttons1">
@@ -95,8 +68,16 @@ const Navbar = ({ user, setUser, setIsModalOpen }) => {
                 </button>
               </>
             ) : (
-              <div className="profile-menu">
-                <span className="profile-icon">👤</span>
+              <div className="profile-menu" onMouseEnter={() => setProfileDropdownOpen(true)} onMouseLeave={() => setProfileDropdownOpen(false)}>
+                <i className="fa-sharp fa-solid fa-chalkboard-user fa-flip-horizontal fa-lg profile-icon"></i>
+                {profileDropdownOpen && (
+                  <div className="profile-dropdown">
+                    <Link href="/profile" legacyBehavior>
+                      <a className="profile-dropdown-item">Profile</a>
+                    </Link>
+                    <a href="#" onClick={handleSignOut} className="profile-dropdown-item">Sign Out</a>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -104,6 +85,37 @@ const Navbar = ({ user, setUser, setIsModalOpen }) => {
       </div>
       {/* Styles */}
       <style jsx>{`
+      
+      .profile-menu {
+          position: relative;
+          cursor: pointer;
+        }
+        .profile-icon {
+          font-size: 40px; /* ✅ Ensure the new icon is properly sized */
+          color: #1263a1;
+        }
+        .profile-dropdown {
+          position: absolute;
+          top: 100%;
+          right: 0;
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+          width: 150px;
+          display: flex;
+          flex-direction: column;
+          padding: 10px;
+        }
+        .profile-dropdown-item {
+          padding: 6px;
+          text-decoration: none;
+          color: black;
+          font-size: 14px;
+          display: block;
+        }
+        .profile-dropdown-item:hover {
+          background-color: #f2f2f2;
+        }
         .navbar-container1 {
           top: 0;
           width: 100%;

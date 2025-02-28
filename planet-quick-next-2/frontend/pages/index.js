@@ -1,15 +1,23 @@
 
-import React, { Fragment } from 'react'
-import Head from 'next/head'
-import Link from 'next/link'
-// Remove: import Navbar from '../components/navbar'
-// Remove: import Modal from '../components/modal'
-import Toppagephotos from '../components/toppagephotos'
-import Steps from '../components/steps'
-import Eventslist from '../components/eventslist'
-import Footer from '../components/footer'
+import React, { Fragment, useEffect, useState } from 'react';
+import Head from 'next/head';
+import Link from 'next/link';
+import Toppagephotos from '../components/toppagephotos';
+import Steps from '../components/steps';
+import Eventslist from '../components/eventslist';
+import Footer from '../components/footer';
+import { useRouter } from 'next/router';
 
 export default function TimeMachine() {
+  const router = useRouter();
+  const [showWelcomeMessage, setShowWelcomeMessage] = useState(false);
+
+  useEffect(() => {
+    if (router.query.welcome) {
+      setShowWelcomeMessage(true);
+    }
+  }, [router.query]);
+
   return (
     <>
       <div className="time-machine-container1">
@@ -18,27 +26,10 @@ export default function TimeMachine() {
           <meta property="og:title" content="Planet-Quick" />
         </Head>
 
-        {/*
-          DO NOT render <Navbar> or <Modal> here. 
-          The global <Navbar> + sign-in modal are already in _app.js.
-        */}
-
         {/* Hero Section */}
         <Toppagephotos
-          content1={
-            <Fragment>
-              <span className="time-machine-text24">
-                Simplify event planning and increase community engagement...
-              </span>
-            </Fragment>
-          }
-          heading1={
-            <Fragment>
-              <span className="time-machine-text25">
-                Coordinate Events with Ease
-              </span>
-            </Fragment>
-          }
+          content1={<Fragment><span>Simplify event planning and increase community engagement...</span></Fragment>}
+          heading1={<Fragment><span>Coordinate Events with Ease</span></Fragment>}
         />
 
         {/* Steps Section */}
@@ -63,9 +54,7 @@ export default function TimeMachine() {
                   <div className="createevents-container2">
                     <div className="createevents-content">
                       <span className="thq-heading-2">Create Event</span>
-                      <p className="thq-body-large">
-                        Create an Event, attach your Shopping List, and invite your Guests
-                      </p>
+                      <p className="thq-body-large">Create an Event, attach your Shopping List, and invite your Guests</p>
                     </div>
                     <div className="createevents-actions">
                       <button type="button" className="thq-button-filled createevents-button">
@@ -85,12 +74,8 @@ export default function TimeMachine() {
                 <div className="createevents-accent1-bg">
                   <div className="createevents-container2">
                     <div className="createevents-content">
-                      <span className="thq-heading-2">
-                        Pick Items for Purchase &amp; Delivery
-                      </span>
-                      <p className="thq-body-large">
-                        Build your shopping list and attach it to your event(s).
-                      </p>
+                      <span className="thq-heading-2">Pick Items for Purchase &amp; Delivery</span>
+                      <p className="thq-body-large">Build your shopping list and attach it to your event(s).</p>
                     </div>
                     <div className="createevents-actions">
                       <button type="button" className="thq-button-filled createevents-button">
@@ -110,12 +95,8 @@ export default function TimeMachine() {
                 <div className="createevents-accent1-bg">
                   <div className="createevents-container2">
                     <div className="createevents-content">
-                      <span className="thq-heading-2">
-                        Build &amp; Invite your Group
-                      </span>
-                      <p className="thq-body-large">
-                        Create a group and add guests quickly, customizing your community.
-                      </p>
+                      <span className="thq-heading-2">Build &amp; Invite your Group</span>
+                      <p className="thq-body-large">Create a group and add guests quickly, customizing your community.</p>
                     </div>
                     <div className="createevents-actions">
                       <button type="button" className="thq-button-filled createevents-button">
@@ -130,9 +111,7 @@ export default function TimeMachine() {
         </div>
 
         {/* Events List Section */}
-        <Eventslist
-          heading1={<Fragment><span>Active Events</span></Fragment>}
-        />
+        <Eventslist heading1={<Fragment><span>Active Events</span></Fragment>} />
 
         {/* Footer */}
         <Footer
@@ -143,9 +122,27 @@ export default function TimeMachine() {
           link5={<Fragment><span>Privacy Policy</span></Fragment>}
           logoSrc="/tera%20nova%20logo-400h-1500h.webp"
         />
+
+        {/* Welcome Popup */}
+        {showWelcomeMessage && (
+          <div className="welcome-popup">
+            <p>Congratulations! You're all signed up.</p>
+            <button onClick={() => setShowWelcomeMessage(false)}>Close</button>
+          </div>
+        )}
       </div>
 
       <style jsx>{`
+        .welcome-popup {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: white;
+          padding: 15px;
+          border-radius: 8px;
+          box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+          z-index: 1000;
+        }
         .time-machine-container1 {
           width: 100%;
           display: flex;
