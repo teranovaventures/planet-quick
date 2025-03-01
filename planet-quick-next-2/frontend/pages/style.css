@@ -1168,3 +1168,17 @@ input, select {
 .modal-buttons .save-button:hover {
   background-color: var(--dl-color-theme-primary2);
 }
+.welcome-message {
+  text-align: center;
+  padding: 40px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.5s ease-in-out;
+  transform: scale(1.1);
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1); }
+}

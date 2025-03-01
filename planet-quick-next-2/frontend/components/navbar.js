@@ -9,11 +9,18 @@ const Navbar = ({ user, setUser, setIsModalOpen }) => {
   const router = useRouter();
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
+    const handleClickOutside = (event) => {
+      if (!event.target.closest(".profile-menu") && profileDropdownOpen) {
+        setProfileDropdownOpen(false); // ✅ Close profile dropdown when clicking outside
+      }
+      if (!event.target.closest(".navbar-link4-dropdown-trigger") && dropdownOpen) {
+        setDropdownOpen(false); // ✅ Close More dropdown when clicking outside
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [profileDropdownOpen, dropdownOpen]);
 
   const handleSignOut = (e) => {
     e.preventDefault();
@@ -41,7 +48,13 @@ const Navbar = ({ user, setUser, setIsModalOpen }) => {
             </Link>
 
             {user && (
-              <div className="navbar-link4-dropdown-trigger" onClick={() => setDropdownOpen(!dropdownOpen)}>
+              <div
+                className="navbar-link4-dropdown-trigger"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDropdownOpen(!dropdownOpen);
+                }}
+              >
                 <span className="thq-body-small thq-link">More</span>
                 {dropdownOpen && (
                   <div className="navbar-dropdown">
@@ -68,7 +81,14 @@ const Navbar = ({ user, setUser, setIsModalOpen }) => {
                 </button>
               </>
             ) : (
-              <div className="profile-menu" onMouseEnter={() => setProfileDropdownOpen(true)} onMouseLeave={() => setProfileDropdownOpen(false)}>
+              <div
+                className="profile-menu"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setProfileDropdownOpen(!profileDropdownOpen);
+                }}
+              >
+                {/* ✅ Restored Font Awesome Profile Icon */}
                 <i className="fa-sharp fa-solid fa-chalkboard-user fa-flip-horizontal fa-lg profile-icon"></i>
                 {profileDropdownOpen && (
                   <div className="profile-dropdown">

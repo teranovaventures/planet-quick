@@ -3,8 +3,8 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Autocomplete from 'react-google-autocomplete';
 
-const Profile = () => {
-  const [user, setUser] = useState(null);
+const Profile = ({ setUser }) => {
+  const [user, setUserState] = useState(null);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -21,23 +21,40 @@ const Profile = () => {
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    if (!storedUser) {
+      router.push('/'); // ✅ Redirect if not logged in
+    } else {
       const userData = JSON.parse(storedUser);
-      setUser(userData);
+      setUserState(userData);
       setFirstName(userData.firstName || '');
       setLastName(userData.lastName || '');
       setEmail(userData.email || '');
       setPhone(userData.phone || '');
-      setSavedAddresses(userData.savedAddresses || []);
+  
+      // ✅ Fetch updated saved addresses from Strapi
+      fetch(`${STRAPI_URL}/api/users/${userData.id}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.savedAddresses) {
+            setSavedAddresses(data.savedAddresses);
+            localStorage.setItem('savedAddresses', JSON.stringify(data.savedAddresses)); // ✅ Store in local storage
+          }
+        })
+        .catch((err) => console.error("Error fetching addresses:", err));
     }
-
+  
     const handleBeforeUnload = (event) => {
       if (unsavedChanges) {
         event.preventDefault();
         event.returnValue = "You have unsaved changes!";
       }
     };
-
+  
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [unsavedChanges]);
@@ -68,22 +85,43 @@ const Profile = () => {
     }
   };
 
-  const handleAddAddress = () => {
-    if (newAddress && newAddressTitle) {
-      setSavedAddresses([...savedAddresses, { title: newAddressTitle, address: newAddress }]);
-      setNewAddressTitle('');
-      setNewAddress('');
-      setShowAddressModal(false);
-      setUnsavedChanges(true);
+  const handleAddAddress = async () => {
+    if (!user || !newAddress || !newAddressTitle) return;
+  
+    const updatedAddresses = [...savedAddresses, { title: newAddressTitle, address: newAddress }];
+    
+    try {
+      const res = await fetch(`${STRAPI_URL}/api/users/${user.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+        },
+        body: JSON.stringify({ savedAddresses: updatedAddresses }),
+      });
+  
+      if (res.ok) {
+        alert("Address saved successfully!");
+        setSavedAddresses(updatedAddresses); // ✅ Update state
+        localStorage.setItem('savedAddresses', JSON.stringify(updatedAddresses)); // ✅ Store in local storage
+        setNewAddressTitle('');
+        setNewAddress('');
+        setShowAddressModal(false);
+        setUnsavedChanges(true);
+      } else {
+        alert("Error saving address. Please try again.");
+      }
+    } catch (err) {
+      console.error("Error saving address:", err);
+      alert("Server error. Please try again later.");
     }
   };
-
   const handleDeleteAccount = async () => {
     if (!user) return;
-
+  
     const confirmDelete = window.confirm("Are you sure? This action cannot be undone.");
     if (!confirmDelete) return;
-
+  
     try {
       const res = await fetch(`${STRAPI_URL}/api/users/${user.id}`, {
         method: 'DELETE',
@@ -97,9 +135,11 @@ const Profile = () => {
         alert("Your account has been deleted.");
         localStorage.removeItem('user');
         localStorage.removeItem('jwt');
-        router.push('/');
+        setUser(null); // ✅ Immediately update session state
+        router.push('/'); // ✅ Redirect to homepage
       } else {
-        alert("Error deleting account. Please try again.");
+        const errorData = await res.json();
+        alert(`Error: ${errorData.error?.message || "Unable to delete account."}`);
       }
     } catch (err) {
       console.error("Error deleting account:", err);
@@ -115,7 +155,7 @@ const Profile = () => {
       <div className="profile-accent2-bg">
         <div className="profile-accent1-bg">
           <div className="profile-tile">
-            <h2 className="profile-title">Profile Information</h2>
+            <h2 className="profile-title">{firstName ? `${firstName}'s Profile` : "Profile Information"}</h2>
 
             {/* Editable Fields */}
             <label>First Name</label>
@@ -161,11 +201,16 @@ const Profile = () => {
             
             <label>Enter Address</label>
             <Autocomplete
-              apiKey="YOUR_GOOGLE_PLACES_API_KEY"
-              onPlaceSelected={(place) => setNewAddress(place.formatted_address)}
-              options={{ types: ['geocode'] }}
-              className="google-places-input"
-              placeholder="Enter address"
+                apiKey="AIzaSyDIJPLNjk7OMPfEIfs9pGo20LmHKkzzsu0"
+                onPlaceSelected={(place) => {
+                setNewAddress(place.formatted_address);
+            }}
+                options={{
+                types: ['establishment', 'geocode'], // ✅ Enables searching by place names
+                componentRestrictions: { country: 'us' }
+            }}
+                className="google-places-input"
+                placeholder="Type place name or address"
             />
 
           <div className="modal-buttons">

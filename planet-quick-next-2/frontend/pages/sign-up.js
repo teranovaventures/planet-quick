@@ -1,150 +1,107 @@
 import React, { useState, useEffect } from 'react';
-import Head from 'next/head';
 import { useRouter } from 'next/router';
-import Autocomplete from 'react-google-autocomplete';
+import Head from 'next/head';
+import { FaGoogle, FaFacebookF, FaApple } from 'react-icons/fa';
 
-const Profile = () => {
-  const [user, setUser] = useState(null);
-  const [name, setName] = useState('');
+const SignUp = ({ setUser, setIsModalOpen = () => {} }) => {
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [savedAddresses, setSavedAddresses] = useState([]);
-  const [selectedAddress, setSelectedAddress] = useState('');
-  const [newAddressTitle, setNewAddressTitle] = useState('');
-  const [newAddress, setNewAddress] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [accountCreated, setAccountCreated] = useState(false);
   const router = useRouter();
 
   const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_API_URL || 'http://localhost:1337';
 
   useEffect(() => {
+    // ✅ If already logged in, redirect to homepage
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      const userData = JSON.parse(storedUser);
-      setUser(userData);
-      setName(userData.name || '');
-      setEmail(userData.email || '');
-      setPhone(userData.phone || '');
-      setSavedAddresses(userData.savedAddresses || []);
+      router.push('/');
     }
   }, []);
 
-  const handleSaveProfile = async () => {
-    if (!user) return;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const randomUsername = `user_${Math.floor(Math.random() * 1000000)}`;
 
     try {
-      const res = await fetch(`${STRAPI_URL}/api/users/${user.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('jwt')}`,
-        },
-        body: JSON.stringify({ name, email, phone, savedAddresses }),
+      const res = await fetch(`${STRAPI_URL}/api/auth/local/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: randomUsername, email, password }),
       });
 
-      if (res.ok) {
-        alert("Profile updated successfully!");
-        localStorage.setItem('user', JSON.stringify({ ...user, name, email, phone, savedAddresses }));
-      } else {
-        alert("Error updating profile. Please try again.");
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.error?.message.includes("Email already taken")) {
+          setError("This email is already registered. Signing you in...");
+          setTimeout(() => handleLogin(email, password), 2000);
+        } else {
+          setError(data.error?.message || "Sign-up failed.");
+        }
+        return;
       }
+
+      // ✅ Store session BEFORE redirecting
+      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('jwt', data.jwt);
+      setUser(data.user);
+
+      // ✅ Show Welcome Message Animation
+      setAccountCreated(true);
+      setTimeout(() => {
+        router.push('/'); // ✅ Redirect to homepage
+      }, 2500);
+
     } catch (err) {
-      console.error("Error updating profile:", err);
-      alert("Server error. Please try again later.");
-    }
-  };
-
-  const handleAddAddress = () => {
-    if (newAddress && newAddressTitle) {
-      setSavedAddresses([...savedAddresses, { title: newAddressTitle, address: newAddress }]);
-      setNewAddressTitle('');
-      setNewAddress('');
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    if (!user) return;
-
-    const confirmDelete = window.confirm("Are you sure? This action cannot be undone.");
-    if (!confirmDelete) return;
-
-    try {
-      const res = await fetch(`${STRAPI_URL}/api/users/${user.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('jwt')}`,
-        },
-      });
-
-      if (res.ok) {
-        alert("Your account has been deleted.");
-        localStorage.removeItem('user');
-        localStorage.removeItem('jwt');
-        router.push('/');
-      } else {
-        alert("Error deleting account. Please try again.");
-      }
-    } catch (err) {
-      console.error("Error deleting account:", err);
-      alert("Server error. Please try again later.");
+      setError("Server error. Please try again later.");
     }
   };
 
   return (
-    <div className="profile-container">
-      <Head><title>Profile</title></Head>
-      <div className="profile-accent2-bg">
-        <div className="profile-accent1-bg">
-          <div className="profile-tile">
-            <h2 className="profile-title">Profile Information</h2>
+    <div className="sign-up-container">
+      <Head><title>Sign Up</title></Head>
 
-            {/* Editable Name */}
-            <label>Name</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
-
-            {/* Editable Email */}
-            <label>Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-
-            {/* Editable Phone */}
-            <label>Phone Number</label>
-            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
-
-            {/* Address Book */}
-            <h3 className="profile-subtitle">Address Book</h3>
-            <label>Saved Addresses</label>
-            <select onChange={(e) => setSelectedAddress(e.target.value)}>
-              <option value="">Select a saved address...</option>
-              {savedAddresses.map((addr, index) => (
-                <option key={index} value={addr.address}>{addr.title} - {addr.address}</option>
-              ))}
-            </select>
-
-            {/* Add New Address */}
-            <h4 className="profile-subtitle">Add to Address Book</h4>
-            <label>Address Name</label>
-            <input type="text" value={newAddressTitle} onChange={(e) => setNewAddressTitle(e.target.value)} placeholder="e.g., Work, Parents' House" />
-
-            <label>New Address</label>
-            <Autocomplete
-              apiKey="YOUR_GOOGLE_PLACES_API_KEY"
-              onPlaceSelected={(place) => setNewAddress(place.formatted_address)}
-              className="google-places-input"
-              placeholder="Type new address"
-            />
-
-            <button className="save-address-button" onClick={handleAddAddress}>Save New Address</button>
-
-            {/* Save Profile Button */}
-            <button className="save-profile-button" onClick={handleSaveProfile}>Save Profile</button>
-
-            {/* Delete Account */}
-            <button className="delete-account-button" onClick={handleDeleteAccount}>Delete Account</button>
-          </div>
+      {accountCreated ? (
+        <div className="welcome-message">
+          <h2>🎉 Welcome to Planet Quick!</h2>
+          <p>Redirecting you to your dashboard...</p>
         </div>
-      </div>
+      ) : (
+        <div className="sign-up-box">
+          <h2 className="sign-up-title">Sign Up</h2>
+
+          <div className="social-login">
+            <button className="social-button google"><FaGoogle /> Continue with Google</button>
+            <button className="social-button facebook"><FaFacebookF /> Continue with Facebook</button>
+            <button className="social-button apple"><FaApple /> Continue with Apple</button>
+          </div>
+
+          <p className="modal-divider">OR</p>
+
+          {error && <p className="error">{error}</p>}
+
+          <form onSubmit={handleSubmit} className="sign-up-form">
+            <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <button type="submit" className="sign-up-button">Sign Up</button>
+          </form>
+
+          <p className="sign-up-footer">
+            By continuing, you agree to the <a href="#">Terms of Use</a> and <a href="#">Privacy Policy</a>.
+          </p>
+
+          <p className="sign-up-footer">
+            Already have an account? <a href="#" onClick={(e) => {
+              e.preventDefault();
+              setIsModalOpen(true);
+            }} className="sign-in-link">Sign In</a>
+          </p>
+        </div>
+      )}
     </div>
   );
 };
 
-export default Profile;
+export default SignUp;
