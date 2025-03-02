@@ -389,6 +389,7 @@ export interface ApiEventEvent extends Struct.CollectionTypeSchema {
     deliveryAddress: Schema.Attribute.String;
     deliveryDate: Schema.Attribute.Date;
     deliveryTime: Schema.Attribute.JSON;
+    eventTag: Schema.Attribute.String;
     fundingDeadline: Schema.Attribute.DateTime;
     grade: Schema.Attribute.JSON;
     group: Schema.Attribute.Relation<
