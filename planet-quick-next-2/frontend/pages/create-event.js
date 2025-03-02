@@ -51,21 +51,25 @@ export default function CreateEventPage() {
 
       setFundingDeadline(fundraiserCloseDate.toISOString().slice(0, 16));
 
+
+
       const eventData = {
         data: {
           title: eventName,
           location: eventAddress,
-          date: eventDate,
+          date: new Date(eventDate).toISOString().split('T')[0],  // ✅ Converts to "YYYY-MM-DD"
           time: eventTime ? `${eventTime}:00` : null,
           deliveryAddress: deliverySameAsEvent ? eventAddress : deliveryAddress,
-          deliveryDate,
+          deliveryDate: deliveryDate ? new Date(deliveryDate).toISOString().split('T')[0] : null,
           deliveryTime: deliveryTime ? `${deliveryTime}:00` : null,
-          fundingDeadline: fundraiserCloseDate.toISOString().slice(0, 16),
+          fundingDeadline: new Date(fundingDeadline).toISOString().split('T')[0],  // ✅ Converts to "YYYY-MM-DD"
           groupReuse,
           groupTitle: groupReuse === 'yes' ? groupTitle : null,
           state: 'pending',
         },
       };
+
+      
 
       console.log('📡 Sending event data to Strapi:', eventData);
 
@@ -73,7 +77,7 @@ export default function CreateEventPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+          Authorization: `Bearer ${localStorage.getItem('jwt')}`,  // ❌ This might be the issue
         },
         body: JSON.stringify(eventData),
       });
@@ -348,7 +352,7 @@ export default function CreateEventPage() {
                     rgb(192, 36, 37) 0%,
                     rgba(240, 134, 53, 0.04) 100%
                   ),
-                  url("https://play.teleporthq.io/static/svg/default-img.svg");
+                  url("https://play.teleporthq.io/static/svg/.svg");
               }
               .createevents-accent2-bg {
                 gap: var(--dl-space-space-oneandhalfunits);
