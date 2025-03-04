@@ -22,7 +22,8 @@ export default function CreateEventPage() {
   const router = useRouter();
   const [isDateTimeSet, setIsDateTimeSet] = useState(false);
   const [isDeliverySet, setIsDeliverySet] = useState(false);
-
+  const [eventHasShoppingList, setEventHasShoppingList] = useState(false);
+  const [eventHasGroup, setEventHasGroup] = useState(false);
   const [shoppingDetails, setShoppingDetails] = useState({
     deliveryInfo: "",
     deliveryTime: "",
@@ -89,8 +90,35 @@ export default function CreateEventPage() {
         return;
       }
 
+      // Extract the event ID from the response (only once)
+      const json = await res.json();
+      const eventId = json.data.id; // ✅ Get event ID from Strapi response
+
+      // Fetch event details to check for attached shopping list and group
+      try {
+        const eventRes = await fetch(`${STRAPI_API_URL}/${eventId}?populate=*`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_KEY}`,
+          },
+        });
+
+        const eventDetails = await eventRes.json();
+        console.log("🎯 Event Details from Strapi:", eventDetails);
+
+        if (eventDetails.data) {
+          setEventHasShoppingList(eventDetails.data.shoppinglist !== null);
+          setEventHasGroup(eventDetails.data.group !== null);
+        } else {
+          console.warn("⚠️ No event data found in Strapi response.");
+        }
+      } catch (error) {
+        console.error("🚨 Error fetching event details:", error);
+      }
+
+      // Show success modal instead of redirecting immediately
       setShowSuccessModal(true);
-      router.push('/pending-events');
 
     } catch (error) {
       console.error('🚨 Error:', error);
@@ -196,7 +224,7 @@ export default function CreateEventPage() {
 )}
 
 
-
+              
 
               <button className="thq-button-filled create-event-button" onClick={handleCreateEvent}>Create Event</button>
             </div>
@@ -204,14 +232,91 @@ export default function CreateEventPage() {
         </div>
       </div>
 
-      {showSuccessModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <p>🎉 Event Created Successfully!</p>
-            <button onClick={() => setShowSuccessModal(false)}>Close</button>
-          </div>
-        </div>
-      )}
+
+
+
+                            {showSuccessModal && (
+                        <div className="modal-overlay">
+                          <div className="modal-content expanded-modal"> {/* Widened modal */}
+                            
+                            {/* ❌ Close Button */}
+                            <button className="close-button" onClick={() => setShowSuccessModal(false)}>✖</button>
+
+                            <h2>🎉 Way to Go! 🎉</h2>
+
+                            {/* 🌟 Animated Text */}
+                            <p id="redirectMessage">Planet Quick is getting things ready...</p>
+
+                            {/* 🎯 Buttons Based on Event Status */}
+                            <div className="modal-buttons-table">
+                              {(!eventHasShoppingList && !eventHasGroup) && (
+                                <>
+                                  <button 
+                                    className="thq-button-navbar"
+                                    onClick={() => {
+                                      document.getElementById("redirectMessage").innerText = "Planet Quick is sending you to shop!";
+                                      setTimeout(() => router.push('/create-shopping-list'), 1500);
+                                    }}
+                                  >
+                                    🛒 Build Shopping List
+                                  </button>
+                                  <button 
+                                    className="thq-button-navbar"
+                                    onClick={() => {
+                                      document.getElementById("redirectMessage").innerText = "Planet Quick is sending you to Invite Guests!";
+                                      setTimeout(() => router.push('/create-group'), 1500);
+                                    }}
+                                  >
+                                    🎟 Invite Guests
+                                  </button>
+                                </>
+                              )}
+
+                              {eventHasGroup && !eventHasShoppingList && (
+                                <button 
+                                  className="thq-button-navbar"
+                                  onClick={() => {
+                                    document.getElementById("redirectMessage").innerText = "Planet Quick is sending you to shop!";
+                                    setTimeout(() => router.push('/create-shopping-list'), 1500);
+                                  }}
+                                >
+                                  🛒 Build Shopping List
+                                </button>
+                              )}
+
+                              {eventHasShoppingList && !eventHasGroup && (
+                                <button 
+                                  className="thq-button-navbar"
+                                  onClick={() => {
+                                    document.getElementById("redirectMessage").innerText = "Planet Quick is sending you to Invite Guests!";
+                                    setTimeout(() => router.push('/create-group'), 1500);
+                                  }}
+                                >
+                                  🎟 Invite Guests
+                                </button>
+                              )}
+
+                              {/* 📌 If the event has BOTH a shopping list & a group, go to Pending Events */}
+                              {(eventHasShoppingList || eventHasGroup) && (
+                                <button 
+                                  className="thq-button-navbar"
+                                  onClick={() => {
+                                    document.getElementById("redirectMessage").innerText = "Planet Quick is sending you to Pending Events!";
+                                    setTimeout(() => router.push('/pending-events'), 1500);
+                                  }}
+                                >
+                                  ✅ See Pending Events
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+
+                      
+
+
 
             {/* ✅ Set Event Date/Time Modal */}
 {showDateModal && (
@@ -562,6 +667,63 @@ export default function CreateEventPage() {
 
               .modal-buttons .save-button:hover {
                 background-color: darkred;
+              }
+                @keyframes fadeIn {
+                0% { opacity: 0; transform: scale(0.9); }
+                100% { opacity: 1; transform: scale(1); }
+              }
+
+              #redirectMessage {
+                text-align: center;
+                font-size: 18px;
+                font-weight: bold;
+                margin-bottom: 20px;
+                color: #1263a1;
+                animation: fadeIn 1s ease-in-out;
+              }
+                /* 📌 Widened Modal */
+              .expanded-modal {
+                width: 550px; /* Increase width */
+                height: auto; /* Adjust height automatically */
+                padding: 2rem;
+                border-radius: 20px;
+                text-align: center;
+              }
+
+              /* ❌ Close Button Styling */
+              .close-button {
+                position: absolute;
+                top: 10px;
+                right: 15px;
+                background: none;
+                border: none;
+                font-size: 20px;
+                cursor: pointer;
+              }
+
+              /* 🎯 Button Layout (Table-Like) */
+              .modal-buttons-table {
+                display: flex;
+                justify-content: center;
+                gap: 15px;
+                margin-top: 20px;
+              }
+
+              /* 🌟 Match Navbar Sign-In Button */
+              .thq-button-navbar {
+                padding: 12px 24px;
+                border-radius: 46px;
+                background-color:rgb(170, 14, 27); /* Match navbar button color */
+                color: white;
+                font-size: 16px;
+                border: none;
+                cursor: pointer;
+                transition: all 0.2s ease-in-out;
+              }
+
+              .thq-button-navbar:hover {
+                background-color: #0d4a7a; /* Darker hover color */
+                transform: scale(1.05);
               }
             `}</style>
           </div>
