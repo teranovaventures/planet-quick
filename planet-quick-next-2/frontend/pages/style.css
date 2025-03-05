@@ -1182,3 +1182,38 @@ input, select {
   0% { opacity: 0; transform: scale(0.9); }
   100% { opacity: 1; transform: scale(1); }
 }
+.pending-events-page {
+  text-align: center;
+  padding: 20px;
+}
+
+.carousel {
+  display: flex;
+  overflow-x: auto;
+  gap: 20px;
+  padding: 10px;
+  white-space: nowrap;
+}
+
+.event-tile {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.2);
+  min-width: 200px;
+  text-align: center;
+}
+
+.event-image {
+  width: 100%;
+  height: auto;
+  border-radius: 5px;
+}
+
+.launch-event-btn {
+  background-color: #1263a1;
+  color: white;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+}

@@ -155,7 +155,7 @@ export default function TimeMachine() {
               rgb(192, 36, 37) 0%,
               rgba(240, 134, 53, 0.04) 100%
             ),
-            url('https://play.teleporthq.io/static/svg/default-img.svg');
+            url('https://play.teleporthq.io/static/svg/.svg');
         }
 
         .tiles-column {
