@@ -1,0 +1,42 @@
+{
+  "kind": "collectionType",
+  "collectionName": "shoppinglists",
+  "info": {
+    "singularName": "shoppinglist",
+    "pluralName": "shoppinglists",
+    "displayName": "shoppinglist",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "description": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::event.event"
+    },
+    "totalcost": {
+      "type": "decimal"
+    },
+    "title": {
+      "type": "string"
+    },
+    "owner": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::event.event"
+    },
+    "state": {
+      "type": "enumeration",
+      "enum": [
+        "pending",
+        "active",
+        "purchased"
+      ]
+    },
+    "items": {
+      "type": "json"
+    }
+  }
+}

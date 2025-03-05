@@ -1,0 +1,46 @@
+{
+  "kind": "collectionType",
+  "collectionName": "product_catalogs",
+  "info": {
+    "singularName": "product-catalog",
+    "pluralName": "product-catalogs",
+    "displayName": "ProductCatalog",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "merchant": {
+      "type": "string"
+    },
+    "brand": {
+      "type": "string"
+    },
+    "itemDescription": {
+      "type": "string"
+    },
+    "SKU": {
+      "type": "string"
+    },
+    "price": {
+      "type": "decimal"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "lastUpdated": {
+      "type": "datetime"
+    },
+    "hits": {
+      "type": "integer",
+      "default": 0
+    },
+    "lastSeen": {
+      "type": "date"
+    },
+    "approxPrice": {
+      "type": "biginteger"
+    }
+  }
+}

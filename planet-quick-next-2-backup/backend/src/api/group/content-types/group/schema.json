@@ -1,0 +1,39 @@
+{
+  "kind": "collectionType",
+  "collectionName": "groups",
+  "info": {
+    "singularName": "group",
+    "pluralName": "groups",
+    "displayName": "group",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "firstName": {
+      "type": "string"
+    },
+    "grade": {
+      "type": "json"
+    },
+    "email": {
+      "type": "email"
+    },
+    "phone": {
+      "type": "biginteger"
+    },
+    "lastName": {
+      "type": "string"
+    },
+    "groupTitle": {
+      "type": "string"
+    },
+    "guests": {
+      "type": "json"
+    },
+    "grouptype": {
+      "type": "json"
+    }
+  }
+}
