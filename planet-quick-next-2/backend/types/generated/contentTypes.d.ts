@@ -414,6 +414,7 @@ export interface ApiEventEvent extends Struct.CollectionTypeSchema {
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    userId: Schema.Attribute.String;
     usstate: Schema.Attribute.String;
     zip: Schema.Attribute.BigInteger;
   };

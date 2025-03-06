@@ -35,175 +35,166 @@ export default function CreateEventPage() {
   const handleCreateEvent = async () => {
     setErrorMessage('');
 
+    // ✅ Ensure user is authenticated before proceeding
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) {
+        setErrorMessage("User authentication required. Please log in.");
+        return;
+    }
+
+    const user = JSON.parse(storedUser); // ✅ Retrieve user details
+    console.log("👤 Authenticated User:", user);
+
     try {
-      if (!eventName || !eventAddress || !eventDate || !eventTime) {
-        setErrorMessage('Please fill out all required fields.');
-        return;
-      }
+        if (!eventName || !eventAddress || !eventDate || !eventTime) {
+            setErrorMessage('Please fill out all required fields.');
+            return;
+        }
 
-      let eventDateTime = new Date(`${eventDate}T${eventTime}:00`);
-      let deliveryDateTimeObj = deliveryDate && deliveryTime ? new Date(`${deliveryDate}T${deliveryTime}:00`) : null;
-      let fundraiserCloseDate = new Date(eventDateTime.getTime() - 24 * 60 * 60 * 1000);
+        let eventDateTime = new Date(`${eventDate}T${eventTime}:00`);
+        let deliveryDateTimeObj = deliveryDate && deliveryTime ? new Date(`${deliveryDate}T${deliveryTime}:00`) : null;
+        let fundraiserCloseDate = new Date(eventDateTime.getTime() - 24 * 60 * 60 * 1000);
 
-      if (deliveryDateTimeObj && deliveryDateTimeObj > eventDateTime) {
-        setErrorMessage('Delivery date/time cannot be after the event date/time.');
-        return;
-      }
+        if (deliveryDateTimeObj && deliveryDateTimeObj > eventDateTime) {
+            setErrorMessage('Delivery date/time cannot be after the event date/time.');
+            return;
+        }
 
-      setFundingDeadline(fundraiserCloseDate.toISOString().slice(0, 16));
+        setFundingDeadline(fundraiserCloseDate.toISOString().slice(0, 16));
 
+        // ✅ Debugging Logs
+        console.log("📆 Event Date:", eventDateTime);
+        console.log("📦 Delivery Date:", deliveryDateTimeObj);
+        console.log("🕒 Funding Deadline:", fundraiserCloseDate);
 
+        // ✅ Prepare event data
+        const eventData = {
+            data: {
+                title: eventName,
+                location: eventAddress,
+                date: new Date(eventDate).toISOString().split('T')[0],
+                time: eventTime ? `${eventTime}:00` : null,
+                deliveryAddress: deliverySameAsEvent ? eventAddress : deliveryAddress,
+                deliveryDate: deliveryDate ? new Date(deliveryDate).toISOString().split('T')[0] : null,
+                deliveryTime: deliveryTime ? `${deliveryTime}:00` : null,
+                fundingDeadline: new Date(fundraiserCloseDate).toISOString().split('T')[0],
+                groupReuse,
+                groupTitle: groupReuse === 'yes' ? groupTitle : null,
+                userId: String(user.id),  // ✅ Convert number to string
+                state: 'pending',
+            },
+        };
 
-      const eventData = {
-        data: {
-          title: eventName,
-          location: eventAddress,
-          date: new Date(eventDate).toISOString().split('T')[0],  // ✅ Converts to "YYYY-MM-DD"
-          time: eventTime ? `${eventTime}:00` : null,
-          deliveryAddress: deliverySameAsEvent ? eventAddress : deliveryAddress,
-          deliveryDate: deliveryDate ? new Date(deliveryDate).toISOString().split('T')[0] : null,
-          deliveryTime: deliveryTime ? `${deliveryTime}:00` : null,
-          fundingDeadline: new Date(fundingDeadline).toISOString().split('T')[0],  // ✅ Converts to "YYYY-MM-DD"
-          groupReuse,
-          groupTitle: groupReuse === 'yes' ? groupTitle : null,
-          state: 'pending',
-        },
-      };
+        console.log('📡 Sending event data to Strapi:', eventData);
 
-      
-
-      console.log('📡 Sending event data to Strapi:', eventData);
-
-      const res = await fetch(`${STRAPI_API_URL}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('jwt')}`,  // ❌ This might be the issue
-        },
-        body: JSON.stringify(eventData),
-      });
-
-      if (!res.ok) {
-        const json = await res.json();
-        console.error('🚨 Error creating event in Strapi:', json);
-        setErrorMessage(json.error?.message || 'Failed to create event. Check console for details.');
-        return;
-      }
-
-      // Extract the event ID from the response (only once)
-      const json = await res.json();
-      const eventId = json.data.id; // ✅ Get event ID from Strapi response
-
-      // Fetch event details to check for attached shopping list and group
-      try {
-        const eventRes = await fetch(`${STRAPI_API_URL}/${eventId}?populate=*`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_STRAPI_API_KEY}`,
-          },
+        const res = await fetch(`${STRAPI_API_URL}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+            },
+            body: JSON.stringify(eventData),
         });
 
-        const eventDetails = await eventRes.json();
-        console.log("🎯 Event Details from Strapi:", eventDetails);
-
-        if (eventDetails.data) {
-          setEventHasShoppingList(eventDetails.data.shoppinglist !== null);
-          setEventHasGroup(eventDetails.data.group !== null);
-        } else {
-          console.warn("⚠️ No event data found in Strapi response.");
+        if (!res.ok) {
+            const json = await res.json();
+            console.error('🚨 Error creating event in Strapi:', json);
+            setErrorMessage(json.error?.message || 'Failed to create event. Check console for details.');
+            return;
         }
-      } catch (error) {
-        console.error("🚨 Error fetching event details:", error);
-      }
 
-      // Show success modal instead of redirecting immediately
-      setShowSuccessModal(true);
+        // ✅ Extract event ID from response
+        const json = await res.json();
+        const eventId = json.data.id;
+        console.log("✅ Event Created with ID:", eventId);
+
+        // ✅ Show success modal instead of redirecting immediately
+        setShowSuccessModal(true);
 
     } catch (error) {
-      console.error('🚨 Error:', error);
-      setErrorMessage('Server error. Please try again later.');
+        console.error('🚨 Error:', error);
+        setErrorMessage('Server error. Please try again later.');
     }
-  };
-
-  const handleSaveShoppingDetails = () => {
-    // Require fundraiser close date/time regardless of delivery option
-    if (!fundingDeadline) {
-      alert("Please select a fundraiser close date and time before saving.");
-      return; // Keep modal open if missing
-    }
-
-    // Only require delivery details if delivery is selected
-    if (isDeliverySet && (!deliveryDate || !deliveryTime)) {
-      alert("Please select a delivery date and time before saving.");
-      return; // Keep modal open if required fields are missing
-    }
-
-    // Save the details correctly
-    setShoppingDetails({
-      deliveryInfo: isDeliverySet
-        ? deliverySameAsEvent
-          ? "Same as Event"
-          : deliveryAddress
-        : "No Delivery",
-
-      deliveryTime: isDeliverySet ? deliveryTime || "TBD" : "N/A",
-
-      fundraiserCloses: new Date(fundingDeadline).toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      })
-    });
-
-    // Close the modal after successfully saving
-    setShowShoppingModal(false);
 };
 
+                    const handleSaveShoppingDetails = () => {
+                      // Require fundraiser close date/time regardless of delivery option
+                      if (!fundingDeadline) {
+                        alert("Please select a fundraiser close date and time before saving.");
+                        return; // Keep modal open if missing
+                      }
 
-  return (
-    <div className="page-background">
-      <div className="createevents-accent2-bg">
-        <div className="createevents-accent1-bg">
-          <div className="createevents-container2">
-            <div className="createevents-content">
-                <h2 className="thq-heading-2">Plan Your Event</h2>
-                {errorMessage && <div className="error-message">{errorMessage}</div>}
+                      // Only require delivery details if delivery is selected
+                      if (isDeliverySet && (!deliveryDate || !deliveryTime)) {
+                        alert("Please select a delivery date and time before saving.");
+                        return; // Keep modal open if required fields are missing
+                      }
 
-                <label>Event Name</label>
-                <input type="text" value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="e.g. 'Gala Bash'" />
+                      // Save the details correctly
+                      setShoppingDetails({
+                        deliveryInfo: isDeliverySet
+                          ? deliverySameAsEvent
+                            ? "Same as Event"
+                            : deliveryAddress
+                          : "No Delivery",
 
-                <label>Event Address</label>
-                <Autocomplete
-                  apiKey="YOUR_GOOGLE_PLACES_API_KEY"
-                  onPlaceSelected={(place) => setEventAddress(place.formatted_address)}
-                  options={{ types: ['establishment', 'geocode'], componentRestrictions: { country: 'us' } }}
-                  className="google-places-input"
-                  placeholder="Type place name or address"
-                />
+                        deliveryTime: isDeliverySet ? deliveryTime || "TBD" : "N/A",
+
+                        fundraiserCloses: new Date(fundingDeadline).toLocaleString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        })
+                      });
+
+                      // Close the modal after successfully saving
+                      setShowShoppingModal(false);
+                  };
+
+
+                    return (
+                      <div className="page-background">
+                        <div className="createevents-accent2-bg">
+                          <div className="createevents-accent1-bg">
+                            <div className="createevents-container2">
+                              <div className="createevents-content">
+                                  <h2 className="thq-heading-2">Plan Your Event</h2>
+                                  {errorMessage && <div className="error-message">{errorMessage}</div>}
+
+                                  <label>Event Name</label>
+                                  <input type="text" value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="e.g. 'Gala Bash'" />
+
+                                  <label>Event Address</label>
+                                  <Autocomplete
+                                    apiKey="YOUR_GOOGLE_PLACES_API_KEY"
+                                    onPlaceSelected={(place) => setEventAddress(place.formatted_address)}
+                                    options={{ types: ['establishment', 'geocode'], componentRestrictions: { country: 'us' } }}
+                                    className="google-places-input"
+                                    placeholder="Type place name or address"
+                                  />
 
 
 
-{isDateTimeSet ? (
-  <div className="event-details">
-    <span>
-      <strong>Event Date/Time:</strong> {new Date(`${eventDate}T${eventTime}`).toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      })}
-    </span>
-    <button className="edit-link" onClick={() => setShowDateModal(true)}>Edit</button>
-  </div>
-) : (
-  <button className="thq-button-outline" onClick={() => setShowDateModal(true)}>Set Date/Time</button>
-)}
+                  {isDateTimeSet ? (
+                    <div className="event-details">
+                      <span>
+                        <strong>Event Date/Time:</strong> {new Date(`${eventDate}T${eventTime}`).toLocaleString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        })}
+                      </span>
+                      <button className="edit-link" onClick={() => setShowDateModal(true)}>Edit</button>
+                    </div>
+                  ) : (
+                    <button className="thq-button-outline" onClick={() => setShowDateModal(true)}>Set Date/Time</button>
+                  )}
 
 
 

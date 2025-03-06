@@ -62,40 +62,47 @@ export default function CreateGroupPage() {
   // 4) SUBMIT TO STRAPI
   // ------------------------------
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
+
+    // ✅ Debugging Log: Print Data Before Sending
+    console.log("📡 Sending Group Data:", { groupTitle, members });
 
     const groupData = {
-      data: {
-        title: groupTitle,
-        state: 'pending',
-        members
-      }
-    }
+        data: {
+            title: groupTitle,
+            state: 'pending',
+            members
+        }
+    };
 
     try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${STRAPI_API_KEY}`
-        },
-        body: JSON.stringify(groupData)
-      })
+        const res = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${STRAPI_API_KEY}`
+            },
+            body: JSON.stringify(groupData)
+        });
 
-      const json = await res.json()
-      if (res.ok) {
-        alert('Group created successfully!')
-        setGroupTitle('')
-        setMembers([{ memberName: '', memberEmail: '' }])
-      } else {
-        console.error('Error creating group:', json)
-        alert('Failed to create group.')
-      }
+        const json = await res.json();
+
+        // ✅ Debugging Log: Print API Response
+        console.log("📨 Strapi API Response:", json);
+
+        if (res.ok) {
+            alert('Group created successfully!');
+            setGroupTitle('');
+            setMembers([{ memberName: '', memberEmail: '' }]);
+        } else {
+            console.error('🚨 Error creating group:', json);
+            alert('Failed to create group. Check console for details.');
+        }
     } catch (error) {
-      console.error('Error:', error)
-      alert('Error creating group.')
+        console.error('🚨 Error:', error);
+        alert('Error creating group.');
     }
-  }
+};
 
   // ------------------------------
   // 5) RENDER

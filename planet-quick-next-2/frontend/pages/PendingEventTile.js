@@ -1,12 +1,13 @@
-import React from 'react';
-
 export default function PendingEventTile({ data }) {
-  return (
-    <div className="event-tile">
-      <h3>{data.title || data.name}</h3>
-      <p>{data.date ? `📅 ${data.date}` : '📌 Pending Details'}</p>
-      {data.image && <img src={data.image} alt={data.title} className="event-image" />}
-      <button className="view-btn">🔍 View Details</button>
-    </div>
-  );
-}
+    const { title, date, time, location, state } = data.attributes || data; // ✅ Extract event attributes
+  
+    return (
+      <div className="event-tile">
+        <h3>{title || "No Title"}</h3>
+        <p>{date ? `📅 ${date}` : "📌 No Date"}</p>
+        <p>{time ? `⏰ ${time}` : "⏳ Time TBD"}</p>
+        <p>{location ? `📍 ${location}` : "📍 Location TBD"}</p>
+        <p>{state === "pending" ? "🟡 Pending" : "✅ Ready"}</p>
+      </div>
+    );
+  }

@@ -92,13 +92,23 @@ export default function TestPage() {
         <h1>Pending Events</h1>
       </div>
 
+
+
       {/* 🚀 Create Live Event Button */}
-      {!isSelecting && (
-        <button style={styles.createLiveEventBtn} onClick={() => setIsSelecting(true)}>
-        🚀 Create Live Event
-      </button>
-      
-      )}
+        {!isSelecting && (
+          <button 
+            style={styles.createLiveEventBtn} 
+            onClick={() => {
+              setIsSelecting(true); // ✅ Enables selection mode
+            }}
+          >
+            🚀 Create Live Event
+          </button>
+        )}
+
+
+
+
 
       {/* 📌 Sections */}
       {[
@@ -115,8 +125,11 @@ export default function TestPage() {
 
           
           
-                          {data.map((item) => {
+              {data.length > 0 ? (
+                data.map((item) => {
                   const isSelected = selected === item.id || (Array.isArray(selected) && selected.includes(item.id));
+
+                  // ✅ Grey out unselected tiles in the same section
                   const isGreyedOut =
                     (type === "event" && selectedEvent !== null && selectedEvent !== item.id) ||
                     (type === "list" && selectedLists.length > 0 && !selectedLists.includes(item.id)) ||
@@ -124,26 +137,31 @@ export default function TestPage() {
 
                   return (
                     <div key={item.id} style={{ position: "relative" }}>
-                      {/* 🟤 Tan Background Card (Behind Main Tile) */}
+                      {/* 🟤 Background Card */}
                       <div style={styles.eventTileBefore}></div>
 
                       {/* ⚪ Main White Tile */}
                       <div
                         style={{
                           ...styles.eventTile,
-                          ...(isSelecting && !isGreyedOut ? styles.shaking : {}), // ✅ Tiles shake until one is picked
-                          ...(isSelected ? styles.selectedTile : {}), // ✅ Stops shaking once selected
-                          ...(isGreyedOut ? styles.greyedOutTile : {}), // ✅ Grey out unselected tiles in the row
+                          ...(isSelecting && !isSelected && !isGreyedOut ? styles.shaking : {}), // ✅ Shake ONLY unselected, non-greyed-out tiles
+                          ...(isSelected ? styles.selectedTile : {}), // ✅ Apply selected styling
+                          ...(isGreyedOut ? styles.greyedOutTile : {}), // ✅ Apply greyed-out styling
                         }}
                         onClick={() => !isGreyedOut && handleSelect(item.id, type)} // ✅ Prevent clicking greyed-out tiles
                       >
-                        <h3>{item.title}</h3>
-                        <p>📅 {item.date} ⏰ {item.time}</p>
-                        <p>🎯 Goal: {item.goal}</p>
+                        <h3>{item.title || "No Title"}</h3>
+                        <p>📅 {item.date ? new Date(item.date).toLocaleDateString() : "No Date"}</p>
+                        <p>📍 {item.location || "No Location"}</p>
                       </div>
                     </div>
                   );
-                })}
+                })
+              ) : (
+                <p style={{ textAlign: "center", color: "#666", marginTop: "10px" }}>
+                  No pending {type.toLowerCase()} found.
+                </p>
+              )}
 
 
 
