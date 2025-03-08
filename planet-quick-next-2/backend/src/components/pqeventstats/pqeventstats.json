@@ -1,0 +1,24 @@
+{
+  "collectionName": "components_pqeventstats_pqeventstats",
+  "info": {
+    "displayName": "pqeventstats"
+  },
+  "options": {},
+  "attributes": {
+    "pqtotalevents": {
+      "type": "biginteger"
+    },
+    "pqfundsraised": {
+      "type": "decimal"
+    },
+    "pqdonationscount": {
+      "type": "integer"
+    },
+    "pqdonationvalue": {
+      "type": "decimal"
+    },
+    "pqguestcount": {
+      "type": "integer"
+    }
+  }
+}

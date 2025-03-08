@@ -1,0 +1,57 @@
+{
+  "kind": "collectionType",
+  "collectionName": "pqpayments",
+  "info": {
+    "singularName": "pqpayment",
+    "pluralName": "pqpayments",
+    "displayName": "pqpayment",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "pqeventid": {
+      "type": "string"
+    },
+    "pqitem": {
+      "type": "string",
+      "required": false
+    },
+    "pqamount": {
+      "type": "decimal"
+    },
+    "pqmethod": {
+      "type": "enumeration",
+      "enum": [
+        "venmo",
+        "cashapp",
+        "paypal",
+        "zelle"
+      ]
+    },
+    "pqstatus": {
+      "type": "enumeration",
+      "enum": [
+        "pending",
+        "paid",
+        "confirmed"
+      ]
+    },
+    "pqcoordinatorinfo": {
+      "type": "json"
+    },
+    "pqcreatedat": {
+      "type": "date"
+    },
+    "pqupdatedat": {
+      "type": "date"
+    },
+    "pqeventpayment": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::pqevent.pqevent",
+      "inversedBy": "pqpayments"
+    }
+  }
+}

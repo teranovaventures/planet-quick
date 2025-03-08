@@ -1,0 +1,82 @@
+{
+  "kind": "collectionType",
+  "collectionName": "pqusers",
+  "info": {
+    "singularName": "pquser",
+    "pluralName": "pqusers",
+    "displayName": "pquser",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "pqemail": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "pqpassword": {
+      "type": "password",
+      "required": true
+    },
+    "pqfirstname": {
+      "type": "string"
+    },
+    "pqlastname": {
+      "type": "string"
+    },
+    "pqphone": {
+      "type": "string"
+    },
+    "pqauthprovider": {
+      "type": "enumeration",
+      "enum": [
+        "local",
+        "google",
+        "facebook",
+        "apple"
+      ]
+    },
+    "pqbusinessdetails": {
+      "displayName": "pqbusinessdetails",
+      "type": "component",
+      "repeatable": false,
+      "component": "pqbusinessdetails.pqbusinessdetails"
+    },
+    "pqeventstats": {
+      "displayName": "pqeventstats",
+      "type": "component",
+      "repeatable": false,
+      "component": "pqeventstats.pqeventstats"
+    },
+    "pqcreatedat": {
+      "required": false,
+      "private": true,
+      "type": "date"
+    },
+    "pqupdatedat": {
+      "type": "date",
+      "private": true
+    },
+    "pqaccounttype": {
+      "type": "enumeration",
+      "enum": [
+        "individual",
+        "business"
+      ]
+    },
+    "pqcohostedevents": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::pqevent.pqevent",
+      "mappedBy": "pqcohosts"
+    },
+    "pqueventcoordinated": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::pqevent.pqevent",
+      "mappedBy": "pqcoordinator"
+    }
+  }
+}

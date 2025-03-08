@@ -1,0 +1,25 @@
+{
+  "collectionName": "components_pqbusinessdetails_pqbusinessdetails",
+  "info": {
+    "displayName": "pqbusinessdetails"
+  },
+  "options": {},
+  "attributes": {
+    "pqtin": {
+      "type": "string"
+    },
+    "pqformationdocs": {
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ],
+      "type": "media",
+      "multiple": true
+    },
+    "pqpaymentinfo": {
+      "type": "json"
+    }
+  }
+}

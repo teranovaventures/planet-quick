@@ -1,0 +1,36 @@
+{
+  "kind": "collectionType",
+  "collectionName": "pqshoppinglists",
+  "info": {
+    "singularName": "pqshoppinglist",
+    "pluralName": "pqshoppinglists",
+    "displayName": "pqshoppinglist",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "pqlistname": {
+      "type": "string"
+    },
+    "pqitems": {
+      "type": "json"
+    },
+    "pqhashtag": {
+      "type": "string"
+    },
+    "pqcreatedat": {
+      "type": "date"
+    },
+    "pqupdatedat": {
+      "type": "date"
+    },
+    "pqeventshoppinglist": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::pqevent.pqevent",
+      "inversedBy": "pqshoppinglist"
+    }
+  }
+}

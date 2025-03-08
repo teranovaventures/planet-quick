@@ -1,0 +1,24 @@
+{
+  "kind": "collectionType",
+  "collectionName": "pqinvitations",
+  "info": {
+    "singularName": "pqinvitation",
+    "pluralName": "pqinvitations",
+    "displayName": "pqinvitation",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "pqeventid": {
+      "type": "string"
+    },
+    "pqeventinvited": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::pqevent.pqevent",
+      "inversedBy": "pqeventinvitations"
+    }
+  }
+}

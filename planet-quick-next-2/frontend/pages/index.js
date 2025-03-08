@@ -1,4 +1,3 @@
-
 import React, { Fragment, useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -8,13 +7,22 @@ import Eventslist from '../components/eventslist';
 import Footer from '../components/footer';
 import { useRouter } from 'next/router';
 
-export default function TimeMachine() {
+export default function Home({ user }) {
   const router = useRouter();
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(false);
+  const [notification, setNotification] = useState('');
 
   useEffect(() => {
+    // Check for welcome query parameter
     if (router.query.welcome) {
       setShowWelcomeMessage(true);
+    }
+
+    // Check for pending event notification in localStorage
+    const storedNotification = localStorage.getItem('notification');
+    if (storedNotification) {
+      setNotification(storedNotification);
+      localStorage.removeItem('notification'); // Clear after displaying
     }
   }, [router.query]);
 
@@ -25,6 +33,41 @@ export default function TimeMachine() {
           <title>Planet-Quick</title>
           <meta property="og:title" content="Planet-Quick" />
         </Head>
+
+        {/* Notification for Pending Event */}
+        {notification && (
+          <div
+            style={{
+              position: 'fixed',
+              top: '80px',
+              right: '20px',
+              background: '#F5D1B0',
+              padding: '15px',
+              borderRadius: '46px',
+              boxShadow: '8px 8px 13px 0px #2b2a2a',
+              zIndex: 1000,
+              color: '#BF4408',
+              display: 'flex',
+              alignItems: 'center',
+              fontFamily: 'STIX Two Text, serif',
+            }}
+          >
+            <span>{notification}</span>
+            <button
+              onClick={() => setNotification('')}
+              style={{
+                marginLeft: '10px',
+                background: 'none',
+                border: 'none',
+                color: '#BF4408',
+                cursor: 'pointer',
+                fontSize: '20px',
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Hero Section */}
         <Toppagephotos
@@ -74,7 +117,7 @@ export default function TimeMachine() {
                 <div className="createevents-accent1-bg">
                   <div className="createevents-container2">
                     <div className="createevents-content">
-                      <span className="thq-heading-2">Pick Items for Purchase &amp; Delivery</span>
+                      <span className="thq-heading-2">Pick Items for Purchase & Delivery</span>
                       <p className="thq-body-large">Build your shopping list and attach it to your event(s).</p>
                     </div>
                     <div className="createevents-actions">
@@ -95,7 +138,7 @@ export default function TimeMachine() {
                 <div className="createevents-accent1-bg">
                   <div className="createevents-container2">
                     <div className="createevents-content">
-                      <span className="thq-heading-2">Build &amp; Invite your Group</span>
+                      <span className="thq-heading-2">Build & Invite your Group</span>
                       <p className="thq-body-large">Create a group and add guests quickly, customizing your community.</p>
                     </div>
                     <div className="createevents-actions">
@@ -111,7 +154,7 @@ export default function TimeMachine() {
         </div>
 
         {/* Events List Section */}
-        <Eventslist heading1={<Fragment><span>Active Events</span></Fragment>} />
+        <Eventslist heading1={<Fragment><span>Active Events</span></Fragment>} user={user} />
 
         {/* Footer */}
         <Footer
@@ -139,9 +182,20 @@ export default function TimeMachine() {
           right: 20px;
           background: white;
           padding: 15px;
-          border-radius: 8px;
-          box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
-          z-index: 1000;
+          border-radius: 46px;
+          box-shadow: 8px 8px 13px 0px #2b2a2a;
+          zIndex: 1000;
+          display: flex;
+          alignItems: 'center',
+          fontFamily: 'STIX Two Text, serif',
+        }
+        .welcome-popup button {
+          margin-left: 10px;
+          background: none;
+          border: none;
+          color: #BF4408;
+          cursor: pointer;
+          fontSize: 20px;
         }
         .time-machine-container1 {
           width: 100%;
@@ -157,7 +211,6 @@ export default function TimeMachine() {
             ),
             url('https://play.teleporthq.io/static/svg/.svg');
         }
-
         .tiles-column {
           display: flex;
           flex-direction: column;
@@ -175,7 +228,7 @@ export default function TimeMachine() {
           transition: 0.3s;
           align-items: center;
           justify-content: space-between;
-          background-color: var(--dl-color-theme-accent2);
+          background-color: #F5D1B0;
           border-radius: 46px;
         }
         .createevents-accent2-bg:hover {
@@ -186,7 +239,7 @@ export default function TimeMachine() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          background-color: var(--dl-color-theme-accent1);
+          background-color: #FFFFFF;
           border-radius: 46px;
         }
         .createevents-container2 {
@@ -217,6 +270,19 @@ export default function TimeMachine() {
           align-items: flex-start;
           justify-content: flex-end;
         }
+        .createevents-button {
+          padding: 0.75rem 1.5rem;
+          border-radius: 46px;
+          background: linear-gradient(90deg, #FFC78B 0%, #FFAD61 100%);
+          color: #191818;
+          fontWeight: 700;
+          border: none;
+          cursor: pointer;
+          fontSize: 14px;
+        }
+        .createevents-button:hover {
+          color: #FFFFFF;
+        }
         .tile-top {
           transform: rotateZ(-5deg);
         }
@@ -243,5 +309,5 @@ export default function TimeMachine() {
         }
       `}</style>
     </>
-  )
+  );
 }

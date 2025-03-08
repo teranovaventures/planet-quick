@@ -1,0 +1,83 @@
+{
+  "kind": "collectionType",
+  "collectionName": "pqevents",
+  "info": {
+    "singularName": "pqevent",
+    "pluralName": "pqevents",
+    "displayName": "pqevent",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "pqeventname": {
+      "type": "string"
+    },
+    "pqeventstatus": {
+      "type": "enumeration",
+      "enum": [
+        "pending",
+        "active",
+        "past"
+      ],
+      "required": true
+    },
+    "pqdescription": {
+      "type": "string"
+    },
+    "pqstartdate": {
+      "type": "date"
+    },
+    "pqenddate": {
+      "type": "date"
+    },
+    "pqcreatedat": {
+      "type": "date"
+    },
+    "pqupdatedat": {
+      "type": "date"
+    },
+    "pqcohosts": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::pquser.pquser",
+      "inversedBy": "pqcohostedevents"
+    },
+    "pqcoordinator": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::pquser.pquser",
+      "inversedBy": "pqueventcoordinated"
+    },
+    "pqinvitationlist": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::pqinvitation.pqinvitation"
+    },
+    "pqinvitations": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::pqinvitation.pqinvitation",
+      "mappedBy": "pqeventinvited"
+    },
+    "pqshoppinglist": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::pqshoppinglist.pqshoppinglist",
+      "mappedBy": "pqeventshoppinglist"
+    },
+    "pqpayments": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::pqpayment.pqpayment",
+      "mappedBy": "pqeventpayment"
+    },
+    "pqeventinvitations": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::pqinvitation.pqinvitation",
+      "mappedBy": "pqeventinvited"
+    }
+  }
+}

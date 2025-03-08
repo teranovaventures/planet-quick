@@ -1,722 +1,594 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Autocomplete from 'react-google-autocomplete';
 import { useRouter } from 'next/router';
 
-export default function CreateEventPage() {
+export default function CreateEventPage({ user }) {
   const [eventName, setEventName] = useState('');
   const [eventAddress, setEventAddress] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [eventTime, setEventTime] = useState('');
-  const [savedAddresses, setSavedAddresses] = useState([]);
-  const [deliverySameAsEvent, setDeliverySameAsEvent] = useState(true);
-  const [deliveryAddress, setDeliveryAddress] = useState('');
-  const [deliveryDate, setDeliveryDate] = useState('');
-  const [deliveryTime, setDeliveryTime] = useState('');
-  const [fundingDeadline, setFundingDeadline] = useState('');
-  const [groupReuse, setGroupReuse] = useState('no');
-  const [groupTitle, setGroupTitle] = useState('');
+  const [isDateTimeSet, setIsDateTimeSet] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [showDateModal, setShowDateModal] = useState(false);
-  const [showShoppingModal, setShowShoppingModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [redirectMessage, setRedirectMessage] = useState('');
   const router = useRouter();
-  const [isDateTimeSet, setIsDateTimeSet] = useState(false);
-  const [isDeliverySet, setIsDeliverySet] = useState(false);
-  const [eventHasShoppingList, setEventHasShoppingList] = useState(false);
-  const [eventHasGroup, setEventHasGroup] = useState(false);
-  const [shoppingDetails, setShoppingDetails] = useState({
-    deliveryInfo: "",
-    deliveryTime: "",
-    fundraiserCloses: ""
-  });
 
-  const STRAPI_API_URL = 'http://localhost:1337/api/events';
+  const STRAPI_API_URL = 'http://localhost:1337/api/pqevents';
+  const STRAPI_API_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '76e1da1b6c27d1c452b2de5248d6432e1a83ebd112ded6abc3773a0f80244dc865054434af3067cd4c9e18c658ac4815f8b12dfaf91ae9cc545afd4c001ee6007d7ce3e63b712a9a10b6968669276b0cd69b6b7118be8a0d122f322eeaa5391107a2856181dfd4bd58fb9984da48f7c5c241352b8a67724bb916e982e4af8b19';
+
+  useEffect(() => {
+    console.log('User object:', user);
+    if (!user || !user.id) {
+      setErrorMessage('Please log in to create an event.');
+      router.push('/sign-in');
+    }
+  }, [user, router]);
 
   const handleCreateEvent = async () => {
     setErrorMessage('');
 
-    // ✅ Ensure user is authenticated before proceeding
-    const storedUser = localStorage.getItem('user');
-    if (!storedUser) {
-        setErrorMessage("User authentication required. Please log in.");
-        return;
+    if (!user || !user.id) {
+      setErrorMessage('Please log in to create an event.');
+      router.push('/sign-in');
+      return;
     }
-
-    const user = JSON.parse(storedUser); // ✅ Retrieve user details
-    console.log("👤 Authenticated User:", user);
 
     try {
-        if (!eventName || !eventAddress || !eventDate || !eventTime) {
-            setErrorMessage('Please fill out all required fields.');
-            return;
-        }
+      if (!eventName || !eventAddress || !eventDate || !eventTime) {
+        setErrorMessage('Please fill out all required fields.');
+        return;
+      }
 
-        let eventDateTime = new Date(`${eventDate}T${eventTime}:00`);
-        let deliveryDateTimeObj = deliveryDate && deliveryTime ? new Date(`${deliveryDate}T${deliveryTime}:00`) : null;
-        let fundraiserCloseDate = new Date(eventDateTime.getTime() - 24 * 60 * 60 * 1000);
+      const eventDateTime = new Date(`${eventDate}T${eventTime}:00`);
+      const eventData = {
+        data: {
+          pqeventname: eventName,
+          pqeventstatus: 'pending',
+          pqstartdate: eventDateTime.toISOString().split('T')[0],
+          pqdescription: '',
+          pqenddate: eventDateTime.toISOString().split('T')[0],
+          pqcreatedat: new Date().toISOString().split('T')[0],
+          pqupdatedat: new Date().toISOString().split('T')[0],
+          pqcoordinator: user.id || 1, // Fallback to 1 for testing
+        },
+      };
 
-        if (deliveryDateTimeObj && deliveryDateTimeObj > eventDateTime) {
-            setErrorMessage('Delivery date/time cannot be after the event date/time.');
-            return;
-        }
+      console.log('📡 Sending event data to Strapi:', eventData);
 
-        setFundingDeadline(fundraiserCloseDate.toISOString().slice(0, 16));
+      const res = await fetch(STRAPI_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${STRAPI_API_TOKEN}`,
+        },
+        body: JSON.stringify(eventData),
+      });
 
-        // ✅ Debugging Logs
-        console.log("📆 Event Date:", eventDateTime);
-        console.log("📦 Delivery Date:", deliveryDateTimeObj);
-        console.log("🕒 Funding Deadline:", fundraiserCloseDate);
+      console.log('Response status:', res.status);
+      const json = await res.json();
+      console.log('Response data:', json);
 
-        // ✅ Prepare event data
-        const eventData = {
+      if (!res.ok) {
+        console.error('🚨 Error creating event in Strapi:', json);
+        setErrorMessage(
+          json.error?.message || 'Failed to create event. Check if the user exists in Strapi.'
+        );
+        return;
+      }
+
+      const eventId = json.data.id;
+      console.log('✅ Event Created with ID:', eventId);
+
+      const updateUserProfile = async () => {
+        const res = await fetch(`http://localhost:1337/api/pqusers/${user.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${STRAPI_API_TOKEN}`,
+          },
+          body: JSON.stringify({
             data: {
-                title: eventName,
-                location: eventAddress,
-                date: new Date(eventDate).toISOString().split('T')[0],
-                time: eventTime ? `${eventTime}:00` : null,
-                deliveryAddress: deliverySameAsEvent ? eventAddress : deliveryAddress,
-                deliveryDate: deliveryDate ? new Date(deliveryDate).toISOString().split('T')[0] : null,
-                deliveryTime: deliveryTime ? `${deliveryTime}:00` : null,
-                fundingDeadline: new Date(fundraiserCloseDate).toISOString().split('T')[0],
-                groupReuse,
-                groupTitle: groupReuse === 'yes' ? groupTitle : null,
-                userId: String(user.id),  // ✅ Convert number to string
-                state: 'pending',
+              pqeventstats: {
+                pqtotalevents: (user.pqeventstats?.pqtotalevents || 0) + 1,
+              },
             },
-        };
-
-        console.log('📡 Sending event data to Strapi:', eventData);
-
-        const res = await fetch(`${STRAPI_API_URL}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${localStorage.getItem('jwt')}`,
-            },
-            body: JSON.stringify(eventData),
+          }),
         });
+        if (!res.ok) console.error('Failed to update user profile');
+      };
+      await updateUserProfile();
 
-        if (!res.ok) {
-            const json = await res.json();
-            console.error('🚨 Error creating event in Strapi:', json);
-            setErrorMessage(json.error?.message || 'Failed to create event. Check console for details.');
-            return;
-        }
-
-        // ✅ Extract event ID from response
-        const json = await res.json();
-        const eventId = json.data.id;
-        console.log("✅ Event Created with ID:", eventId);
-
-        // ✅ Show success modal instead of redirecting immediately
-        setShowSuccessModal(true);
-
+      setShowSuccessModal(true);
     } catch (error) {
-        console.error('🚨 Error:', error);
-        setErrorMessage('Server error. Please try again later.');
+      console.error('🚨 Error:', error);
+      setErrorMessage('Server error. Please try again later.');
     }
-};
+  };
 
-                    const handleSaveShoppingDetails = () => {
-                      // Require fundraiser close date/time regardless of delivery option
-                      if (!fundingDeadline) {
-                        alert("Please select a fundraiser close date and time before saving.");
-                        return; // Keep modal open if missing
-                      }
+  const handleRedirect = (destination) => {
+    setRedirectMessage('Way to Planet Quick! 🌌');
+    setTimeout(() => {
+      if (destination === '/') {
+        localStorage.setItem('notification', 'You have a pending event!');
+      }
+      router.push(destination);
+    }, 2000);
+  };
 
-                      // Only require delivery details if delivery is selected
-                      if (isDeliverySet && (!deliveryDate || !deliveryTime)) {
-                        alert("Please select a delivery date and time before saving.");
-                        return; // Keep modal open if required fields are missing
-                      }
+  const handleConfirmDateTime = () => {
+    if (!eventDate || !eventTime) {
+      setErrorMessage('Please select a valid date and time.');
+      return;
+    }
+    setIsDateTimeSet(true);
+    setShowDateModal(false);
+    const detailDiv = document.querySelector('.event-details');
+    if (detailDiv) detailDiv.style.animation = 'fadeIn 0.5s ease-in-out';
+  };
 
-                      // Save the details correctly
-                      setShoppingDetails({
-                        deliveryInfo: isDeliverySet
-                          ? deliverySameAsEvent
-                            ? "Same as Event"
-                            : deliveryAddress
-                          : "No Delivery",
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(90deg, rgb(192, 36, 37) 0%, rgba(240, 134, 53, 0.04) 100%)',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          gap: '24px',
+          transform: 'rotateZ(1deg)',
+          transition: '0.3s',
+          alignItems: 'center',
+          borderRadius: '46px',
+          justifyContent: 'space-between',
+          backgroundColor: '#F5D1B0',
+          padding: '24px',
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.02)')}
+        onMouseLeave={(e) => (e.currentTarget.style.transform = 'rotateZ(1deg)')}
+      >
+        <div
+          style={{
+            width: '100%',
+            display: 'flex',
+            transform: 'rotateZ(-2deg)',
+            alignItems: 'center',
+            borderRadius: '46px',
+            justifyContent: 'space-between',
+            backgroundColor: '#FFFFFF',
+            padding: '48px 32px',
+            boxShadow: '8px 8px 13px 0px #2b2a2a',
+            transition: '0.3s',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = 'rotateZ(3deg)')}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = 'rotateZ(-2deg)')}
+        >
+          <div
+            style={{
+              gap: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              width: '100%',
+            }}
+          >
+            <h2
+              style={{
+                fontSize: '35px',
+                fontFamily: 'STIX Two Text',
+                fontWeight: 600,
+                lineHeight: '1.5',
+                margin: '0',
+              }}
+            >
+              Create Your Event
+            </h2>
+            {errorMessage && (
+              <div
+                style={{
+                  color: 'red',
+                  fontSize: '0.9rem',
+                  marginBottom: '0.5rem',
+                  textAlign: 'center',
+                }}
+              >
+                {errorMessage}
+              </div>
+            )}
 
-                        deliveryTime: isDeliverySet ? deliveryTime || "TBD" : "N/A",
+            <label
+              style={{
+                fontWeight: 'bold',
+                textAlign: 'left',
+                marginBottom: '0.5rem',
+              }}
+            >
+              Event Name
+            </label>
+            <input
+              type="text"
+              value={eventName}
+              onChange={(e) => setEventName(e.target.value)}
+              placeholder="e.g. 'Star Party'"
+              style={{
+                padding: '0.5rem',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                width: '100%',
+                marginBottom: '0.5rem',
+              }}
+            />
 
-                        fundraiserCloses: new Date(fundingDeadline).toLocaleString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                          hour: 'numeric',
-                          minute: '2-digit',
-                          hour12: true
-                        })
-                      });
+            <label
+              style={{
+                fontWeight: 'bold',
+                textAlign: 'left',
+                marginBottom: '0.5rem',
+              }}
+            >
+              Event Address
+            </label>
+            <Autocomplete
+              apiKey="YOUR_GOOGLE_PLACES_API_KEY"
+              onPlaceSelected={(place) => setEventAddress(place.formatted_address)}
+              options={{ types: ['establishment', 'geocode'], componentRestrictions: { country: 'us' } }}
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                marginBottom: '0.5rem',
+              }}
+              placeholder="Type place name or address"
+            />
 
-                      // Close the modal after successfully saving
-                      setShowShoppingModal(false);
-                  };
+            {isDateTimeSet ? (
+              <div
+                className="event-details"
+                style={{
+                  marginTop: '0.5rem',
+                  fontSize: '0.9rem',
+                  color: '#444',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.5rem',
+                  borderRadius: '8px',
+                  backgroundColor: '#fff',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.transform = 'rotateZ(3deg)')}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = 'rotateZ(0deg)')}
+              >
+                <strong>Event Date/Time:</strong>{' '}
+                {new Date(`${eventDate}T${eventTime}`).toLocaleString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true,
+                })}
+                <button
+                  style={{
+                    fontSize: '0.85rem',
+                    color: '#333',
+                    textDecoration: 'underline',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => setShowDateModal(true)}
+                >
+                  Edit
+                </button>
+              </div>
+            ) : (
+              <button
+                style={{
+                  padding: '0.5rem 1rem',
+                  border: '2px solid #BF4408',
+                  borderRadius: '46px',
+                  backgroundColor: '#FFFFFF',
+                  color: '#BF4408',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  width: 'auto',
+                }}
+                onClick={() => setShowDateModal(true)}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#FBFAF9')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
+              >
+                Set Date/Time
+              </button>
+            )}
 
-
-                    return (
-                      <div className="page-background">
-                        <div className="createevents-accent2-bg">
-                          <div className="createevents-accent1-bg">
-                            <div className="createevents-container2">
-                              <div className="createevents-content">
-                                  <h2 className="thq-heading-2">Plan Your Event</h2>
-                                  {errorMessage && <div className="error-message">{errorMessage}</div>}
-
-                                  <label>Event Name</label>
-                                  <input type="text" value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="e.g. 'Gala Bash'" />
-
-                                  <label>Event Address</label>
-                                  <Autocomplete
-                                    apiKey="YOUR_GOOGLE_PLACES_API_KEY"
-                                    onPlaceSelected={(place) => setEventAddress(place.formatted_address)}
-                                    options={{ types: ['establishment', 'geocode'], componentRestrictions: { country: 'us' } }}
-                                    className="google-places-input"
-                                    placeholder="Type place name or address"
-                                  />
-
-
-
-                  {isDateTimeSet ? (
-                    <div className="event-details">
-                      <span>
-                        <strong>Event Date/Time:</strong> {new Date(`${eventDate}T${eventTime}`).toLocaleString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                          hour: 'numeric',
-                          minute: '2-digit',
-                          hour12: true
-                        })}
-                      </span>
-                      <button className="edit-link" onClick={() => setShowDateModal(true)}>Edit</button>
-                    </div>
-                  ) : (
-                    <button className="thq-button-outline" onClick={() => setShowDateModal(true)}>Set Date/Time</button>
-                  )}
-
-
-
-
-
-{shoppingDetails.fundraiserCloses ? (
-  <div className="event-details">
-    <p>
-      <strong>Delivery Info:</strong> {shoppingDetails.deliveryInfo} {shoppingDetails.deliveryTime !== "N/A" ? `@ ${shoppingDetails.deliveryTime}` : ""}
-    </p>
-    <p>
-      <strong>Fundraiser Closes:</strong> {shoppingDetails.fundraiserCloses}
-    </p>
-    <button className="edit-link" onClick={() => setShowShoppingModal(true)}>Edit</button>
-  </div>
-) : (
-  <button className="thq-button-outline" onClick={() => setShowShoppingModal(true)}>Set Shopping Details</button>
-)}
-
-
-              
-
-              <button className="thq-button-filled create-event-button" onClick={handleCreateEvent}>Create Event</button>
-            </div>
+            <button
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: '46px',
+                background: 'linear-gradient(90deg, #FFC78B 0%, #FFAD61 100%)',
+                color: '#191818',
+                fontWeight: '700',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '14px',
+                width: '150px',
+                alignSelf: 'center',
+              }}
+              onClick={handleCreateEvent}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = '#191818')}
+            >
+              Create Event
+            </button>
           </div>
         </div>
       </div>
 
-
-
-
-                            {showSuccessModal && (
-                        <div className="modal-overlay">
-                          <div className="modal-content expanded-modal"> {/* Widened modal */}
-                            
-                            {/* ❌ Close Button */}
-                            <button className="close-button" onClick={() => setShowSuccessModal(false)}>✖</button>
-
-                            <h2>🎉 Way to Go! 🎉</h2>
-
-                            {/* 🌟 Animated Text */}
-                            <p id="redirectMessage">Planet Quick is getting things ready...</p>
-
-                            {/* 🎯 Buttons Based on Event Status */}
-                            <div className="modal-buttons-table">
-                              {(!eventHasShoppingList && !eventHasGroup) && (
-                                <>
-                                  <button 
-                                    className="thq-button-navbar"
-                                    onClick={() => {
-                                      document.getElementById("redirectMessage").innerText = "Planet Quick is sending you to shop!";
-                                      setTimeout(() => router.push('/create-shopping-list'), 1500);
-                                    }}
-                                  >
-                                    🛒 Build Shopping List
-                                  </button>
-                                  <button 
-                                    className="thq-button-navbar"
-                                    onClick={() => {
-                                      document.getElementById("redirectMessage").innerText = "Planet Quick is sending you to Invite Guests!";
-                                      setTimeout(() => router.push('/create-group'), 1500);
-                                    }}
-                                  >
-                                    🎟 Invite Guests
-                                  </button>
-                                </>
-                              )}
-
-                              {eventHasGroup && !eventHasShoppingList && (
-                                <button 
-                                  className="thq-button-navbar"
-                                  onClick={() => {
-                                    document.getElementById("redirectMessage").innerText = "Planet Quick is sending you to shop!";
-                                    setTimeout(() => router.push('/create-shopping-list'), 1500);
-                                  }}
-                                >
-                                  🛒 Build Shopping List
-                                </button>
-                              )}
-
-                              {eventHasShoppingList && !eventHasGroup && (
-                                <button 
-                                  className="thq-button-navbar"
-                                  onClick={() => {
-                                    document.getElementById("redirectMessage").innerText = "Planet Quick is sending you to Invite Guests!";
-                                    setTimeout(() => router.push('/create-group'), 1500);
-                                  }}
-                                >
-                                  🎟 Invite Guests
-                                </button>
-                              )}
-
-                              {/* 📌 If the event has BOTH a shopping list & a group, go to Pending Events */}
-                              {(eventHasShoppingList || eventHasGroup) && (
-                                <button 
-                                  className="thq-button-navbar"
-                                  onClick={() => {
-                                    document.getElementById("redirectMessage").innerText = "Planet Quick is sending you to Pending Events!";
-                                    setTimeout(() => router.push('/pending-events'), 1500);
-                                  }}
-                                >
-                                  ✅ See Pending Events
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-
-                      
-
-
-
-            {/* ✅ Set Event Date/Time Modal */}
-{showDateModal && (
-  <div className="modal-overlay" onClick={() => setShowDateModal(false)}>
-    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-      <h3>Set Event Date/Time</h3>
-
-      <label>Event Date</label>
-      <input 
-        type="date" 
-        value={eventDate} 
-        onChange={(e) => setEventDate(e.target.value)} 
-      />
-
-      <label>Event Time</label>
-      <input 
-        type="time" 
-        value={eventTime} 
-        onChange={(e) => setEventTime(e.target.value)} 
-      />
-
-      <div className="modal-buttons">
-        <button 
-          className="thq-button-outline"
-          onClick={() => {
-            setShowDateModal(false);  // ✅ Close modal
-            if (!eventDate || !eventTime) setIsDateTimeSet(false);  // ✅ Restore modal button if no selection
+      {showDateModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 999,
           }}
-        >Cancel</button>
+          onClick={() => setShowDateModal(false)}
+        >
+          <div
+            style={{
+              background: '#FFFFFF',
+              padding: '2rem',
+              borderRadius: '46px',
+              width: '400px',
+              maxWidth: '90%',
+              textAlign: 'center',
+              position: 'relative',
+              boxShadow: '8px 8px 13px 0px #2b2a2a',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3
+              style={{
+                marginTop: 0,
+                marginBottom: '16px',
+                fontSize: '26px',
+                fontFamily: 'STIX Two Text',
+                fontWeight: 600,
+                lineHeight: 1.5,
+              }}
+            >
+              Set Event Date/Time
+            </h3>
 
-        <button 
-          className="thq-button-filled"
-          onClick={() => { 
-            if (!eventDate || !eventTime) {
-              setErrorMessage("Please select a valid date and time.");
-              return;
-            }
-            setIsDateTimeSet(true);  // ✅ Mark as set
-            setShowDateModal(false);  // ✅ Close modal
-          }}
-        >Save</button>
-      </div>
-    </div>
-  </div>
-)}
+            <label
+              style={{
+                fontWeight: 'bold',
+                marginTop: '1rem',
+                marginBottom: '0.5rem',
+              }}
+            >
+              Event Date
+            </label>
+            <input
+              type="date"
+              value={eventDate}
+              onChange={(e) => setEventDate(e.target.value)}
+              style={{
+                padding: '0.5rem',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                width: '100%',
+                marginBottom: '0.5rem',
+              }}
+            />
 
+            <label
+              style={{
+                fontWeight: 'bold',
+                marginBottom: '0.5rem',
+              }}
+            >
+              Event Time
+            </label>
+            <input
+              type="time"
+              value={eventTime}
+              onChange={(e) => setEventTime(e.target.value)}
+              style={{
+                padding: '0.5rem',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                width: '100%',
+                marginBottom: '1rem',
+              }}
+            />
 
-
-
-
-
-
-              {showShoppingModal && (
-                <div className="modal-overlay">
-                  <div className="modal-content wider-modal">
-                    
-                    <h3>Set Shopping/Delivery Details</h3>
-
-                    {/* Deliver the Shopping List? (Dropdown) */}
-                    <label>Deliver the shopping list?</label>
-                    <select
-                      value={isDeliverySet ? "yes" : "no"}
-                      onChange={(e) => setIsDeliverySet(e.target.value === "yes")}
-                    >
-                      <option value="no">No</option>
-                      <option value="yes">Yes</option>
-                    </select>
-
-                    {/* Only show address selection if delivery is required */}
-                    {isDeliverySet && (
-                      <>
-                        <div className="radio-group">
-                          <label>
-                            <input
-                              type="radio"
-                              name="deliveryAddress"
-                              checked={deliverySameAsEvent}
-                              onChange={() => setDeliverySameAsEvent(true)}
-                            />
-                            Same as Event Address
-                          </label>
-                          
-                          <label>
-                            <input
-                              type="radio"
-                              name="deliveryAddress"
-                              checked={!deliverySameAsEvent}
-                              onChange={() => setDeliverySameAsEvent(false)}
-                            />
-                            Use Different Address
-                          </label>
-                        </div>
-
-                        {!deliverySameAsEvent && (
-                          <Autocomplete
-                            apiKey="YOUR_GOOGLE_PLACES_API_KEY"
-                            onPlaceSelected={(place) => setDeliveryAddress(place.formatted_address)}
-                            options={{ types: ['geocode'], componentRestrictions: { country: 'us' } }}
-                            className="google-places-input"
-                            placeholder="Enter delivery address"
-                          />
-                        )}
-
-                        <label>Delivery Date</label>
-                        <input type="date" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} required />
-
-                        <label>Delivery Time</label>
-                        <input type="time" value={deliveryTime} onChange={(e) => setDeliveryTime(e.target.value)} required />
-                      </>
-                    )}
-
-                    {/* Fundraiser Close Date & Time (Required Regardless of Delivery) */}
-                    <label>Fundraiser Closes</label>
-                    <input type="datetime-local" value={fundingDeadline} onChange={(e) => setFundingDeadline(e.target.value)} required />
-
-                    {/* Modal Buttons */}
-                    <div className="modal-buttons">
-                      <button className="cancel-button" onClick={() => setShowShoppingModal(false)}>Cancel</button>
-                      <button className="save-button" onClick={handleSaveShoppingDetails}>Save</button>
-                    </div>
-
-                  </div>
-                </div>
-              )}
-
-
-            {/* STYLES */}
-            <style jsx>{`
-              .page-background {
-                flex: 1;
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                background-size: cover;
-                background-image: linear-gradient(
-                    90deg,
-                    rgb(192, 36, 37) 0%,
-                    rgba(240, 134, 53, 0.04) 100%
-                  ),
-                  url("https://play.teleporthq.io/static/svg/.svg");
-              }
-              .createevents-accent2-bg {
-                gap: var(--dl-space-space-oneandhalfunits);
-                display: flex;
-                transform: rotateZ(1deg);
-                transition: 0.3s;
-                align-items: center;
-                border-radius: 46px;
-                justify-content: space-between;
-                background-color: var(--dl-color-theme-accent2);
-              }
-              .createevents-accent2-bg:hover {
-                transform: scale(1.02);
-              }
-              .createevents-accent1-bg {
-                width: 100%;
-                display: flex;
-                transform: rotateZ(-2deg);
-                align-items: center;
-                border-radius: 46px;
-                justify-content: space-between;
-                background-color: var(--dl-color-theme-accent1);
-              }
-              .createevents-container2 {
-                gap: var(--dl-space-space-threeunits);
-                width: 700px;
-                display: flex;
-                box-shadow: 8px 8px 13px 0px #2b2a2a;
-                transition: 0.3s;
-                align-items: center;
-                padding: 3rem 2rem;
-                border-radius: 46px;
-              }
-              .createevents-container2:hover {
-                color: var(--dl-color-theme-neutral-light);
-                background-color: var(--dl-color-theme-neutral-dark);
-              }
-              .createevents-content {
-                gap: 1rem;
-                display: flex;
-                flex-direction: column;
-                width: 100%;
-              }
-              .error-message {
-                color: red;
-                font-size: 0.9rem;
-                margin-bottom: 0.5rem;
-              }
-              label {
-                font-weight: bold;
-              }
-              input[type='text'],
-              input[type='date'],
-              input[type='time'],
-              input[type='datetime-local'] {
-                padding: 0.5rem;
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                width: 100%;
-                margin-bottom: 0.5rem;
-              }
-              .google-places-input {
-                width: 100%;
-                padding: 0.5rem;
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                margin-bottom: 0.5rem;
-              }
-              .address-confirmation {
-                margin-top: 0.5rem;
-                font-size: 0.9rem;
-                color: #444;
-              }
-              .edit-link {
-                font-size: 0.85rem;
-                color: #333;
-                text-decoration: underline;
-                background: none;
-                border: none;
-                cursor: pointer;
-              }
-              .date-time-readout {
-                margin-top: 0.5rem;
-                font-size: 0.9rem;
-                color: #444;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-              }
-              .thq-button-outline {
-                padding: 0.5rem 1rem;
-                border: 2px solid #444;
-                border-radius: 46px;
-                background-color: transparent;
-                cursor: pointer;
-                margin-bottom: 0.5rem;
-              }
-              .thq-button-filled.create-event-button {
-                margin-top: 1rem;
-                width: 100%;
-                padding: 0.75rem;
-                border-radius: 46px;
-                border: none;
-                background-color: rgb(192, 36, 37);
-                color: #fff;
-                cursor: pointer;
-              }
-              .thq-button-filled.create-event-button:hover {
-                opacity: 0.9;
-              }
-              .modal-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.4);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 999;
-              }
-              .modal-content {
-                background: #fff;
-                padding: 2rem;
-                border-radius: 8px;
-                width: 400px;
-                max-width: 90%;
-              }
-              .modal-content label {
-                font-weight: bold;
-                margin-top: 1rem;
-              }
-              .modal-buttons {
-                display: flex;
-                gap: 1rem;
-                justify-content: flex-end;
-                margin-top: 1rem;
-              }
-              .thq-button-filled {
-                padding: 0.5rem 1rem;
-                border-radius: 46px;
-                background-color: rgb(192, 36, 37);
-                color: #fff;
-                border: none;
-                cursor: pointer;
-              }
-              .thq-button-filled:hover {
-                opacity: 0.9;
-              }
-                .radio-group {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 10px;
-              }
-
-              .radio-group label {
-                display: flex;
-                align-items: center;
-                gap: 5px;
-              }
-
-              .modal-buttons {
-                display: flex;
-                justify-content: space-between;
-                margin-top: 15px;
-              }
-
-              .modal-buttons button {
-                padding: 8px 16px;
-                font-size: 14px;
-                border-radius: 6px;
-                border: none;
-                cursor: pointer;
-                transition: 0.2s ease-in-out;
-              }
-
-              .modal-buttons .save-button {
-                background-color: var(--dl-color-theme-primary1);
-                color: white;
-              }
-                .modal-buttons {
-                display: flex;
-                justify-content: space-between;
-                margin-top: 15px;
-              }
-
-              .modal-buttons button {
-                padding: 10px 16px;
-                font-size: 14px;
-                border-radius: 6px;
-                border: none;
-                cursor: pointer;
-                transition: 0.2s ease-in-out;
-              }
-
-              .modal-buttons .cancel-button {
-                background-color: #ddd;
-                color: black;
-              }
-
-              .modal-buttons .save-button {
-                background-color: rgb(192, 36, 37);
-                color: white;
-              }
-
-              .modal-buttons .save-button:hover {
-                background-color: darkred;
-              }
-                @keyframes fadeIn {
-                0% { opacity: 0; transform: scale(0.9); }
-                100% { opacity: 1; transform: scale(1); }
-              }
-
-              #redirectMessage {
-                text-align: center;
-                font-size: 18px;
-                font-weight: bold;
-                margin-bottom: 20px;
-                color: #1263a1;
-                animation: fadeIn 1s ease-in-out;
-              }
-                /* 📌 Widened Modal */
-              .expanded-modal {
-                width: 550px; /* Increase width */
-                height: auto; /* Adjust height automatically */
-                padding: 2rem;
-                border-radius: 20px;
-                text-align: center;
-              }
-
-              /* ❌ Close Button Styling */
-              .close-button {
-                position: absolute;
-                top: 10px;
-                right: 15px;
-                background: none;
-                border: none;
-                font-size: 20px;
-                cursor: pointer;
-              }
-
-              /* 🎯 Button Layout (Table-Like) */
-              .modal-buttons-table {
-                display: flex;
-                justify-content: center;
-                gap: 15px;
-                margin-top: 20px;
-              }
-
-              /* 🌟 Match Navbar Sign-In Button */
-              .thq-button-navbar {
-                padding: 12px 24px;
-                border-radius: 46px;
-                background-color:rgb(170, 14, 27); /* Match navbar button color */
-                color: white;
-                font-size: 16px;
-                border: none;
-                cursor: pointer;
-                transition: all 0.2s ease-in-out;
-              }
-
-              .thq-button-navbar:hover {
-                background-color: #0d4a7a; /* Darker hover color */
-                transform: scale(1.05);
-              }
-            `}</style>
+            <div
+              style={{
+                display: 'flex',
+                gap: '1rem',
+                justifyContent: 'flex-end',
+                marginTop: '1rem',
+              }}
+            >
+              <button
+                style={{
+                  padding: '0.5rem 1rem',
+                  border: '2px solid #BF4408',
+                  borderRadius: '46px',
+                  backgroundColor: '#FFFFFF',
+                  color: '#BF4408',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                }}
+                onClick={() => setShowDateModal(false)}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#FBFAF9')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
+              >
+                Cancel
+              </button>
+              <button
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '46px',
+                  background: 'linear-gradient(90deg, #FFC78B 0%, #FFAD61 100%)',
+                  color: '#191818',
+                  fontWeight: '700',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                }}
+                onClick={handleConfirmDateTime}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#191818')}
+              >
+                Confirm
+              </button>
+            </div>
           </div>
-        );
-      }
+        </div>
+      )}
+
+      {showSuccessModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+          }}
+        >
+          <div
+            style={{
+              background: '#FFFFFF',
+              padding: '2rem',
+              borderRadius: '46px',
+              textAlign: 'center',
+              width: '550px',
+              height: 'auto',
+              position: 'relative',
+              boxShadow: '8px 8px 13px 0px #2b2a2a',
+              animation: 'fadeIn 0.5s ease-in-out',
+            }}
+          >
+            <button
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '15px',
+                background: 'none',
+                border: 'none',
+                fontSize: '20px',
+                cursor: 'pointer',
+                color: 'black',
+              }}
+              onClick={() => handleRedirect('/')}
+            >
+              ✕
+            </button>
+            <h2
+              style={{
+                marginTop: 0,
+                marginBottom: '16px',
+                fontSize: '35px',
+                fontFamily: 'STIX Two Text',
+                fontWeight: 600,
+                lineHeight: 1.5,
+              }}
+            >
+              Event Created! 🎉
+            </h2>
+            <p
+              id="redirectMessage"
+              style={{
+                textAlign: 'center',
+                fontSize: '24px',
+                fontWeight: 'bold',
+                marginBottom: '20px',
+                color: '#00ffff',
+                animation: 'galacticSpin 2s infinite',
+                fontFamily: 'STIX Two Text, serif',
+              }}
+            >
+              {redirectMessage}
+            </p>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '15px',
+                marginTop: '20px',
+              }}
+            >
+              <button
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '46px',
+                  background: 'linear-gradient(90deg, #FFC78B 0%, #FFAD61 100%)',
+                  color: '#191818',
+                  fontWeight: '700',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                }}
+                onClick={() => handleRedirect('/create-shopping-list')}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#191818')}
+              >
+                🛒 Go Shop
+              </button>
+              <button
+                style={{
+                  padding: '0.5rem 1rem',
+                  border: '2px solid #BF4408',
+                  borderRadius: '46px',
+                  backgroundColor: '#FFFFFF',
+                  color: '#BF4408',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                }}
+                onClick={() => handleRedirect('/create-group')}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#FBFAF9')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
+              >
+                🎟 Invite Guests
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          0% { opacity: 0; transform: scale(0.9); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes galacticSpin {
+          0% { transform: rotate(0deg) scale(1); color: #00ffff; }
+          25% { transform: rotate(90deg) scale(1.1); color: #ff00ff; }
+          50% { transform: rotate(180deg) scale(1); color: #ffff00; }
+          75% { transform: rotate(270deg) scale(1.1); color: #00ff00; }
+          100% { transform: rotate(360deg) scale(1); color: #00ffff; }
+        }
+      `}</style>
+    </div>
+  );
+}

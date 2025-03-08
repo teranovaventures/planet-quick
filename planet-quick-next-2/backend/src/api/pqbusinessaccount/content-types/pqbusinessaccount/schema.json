@@ -1,0 +1,43 @@
+{
+  "kind": "collectionType",
+  "collectionName": "pqbusinessaccounts",
+  "info": {
+    "singularName": "pqbusinessaccount",
+    "pluralName": "pqbusinessaccounts",
+    "displayName": "pqbusinessaccount",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "pqbusinessname": {
+      "type": "string",
+      "required": true
+    },
+    "pqtin": {
+      "type": "string",
+      "required": true
+    },
+    "pqformationdocs": {
+      "type": "media",
+      "multiple": true,
+      "required": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "pqpaymentinfo": {
+      "type": "json"
+    },
+    "pqcreatedat": {
+      "type": "date"
+    },
+    "pqupdatedat": {
+      "type": "date"
+    }
+  }
+}

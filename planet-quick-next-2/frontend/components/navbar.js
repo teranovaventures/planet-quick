@@ -4,23 +4,38 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 
 const Navbar = ({ user, setUser, setIsModalOpen }) => {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [eventsDropdownOpen, setEventsDropdownOpen] = useState(false);
+  const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [notifications, setNotifications] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!event.target.closest(".profile-menu") && profileDropdownOpen) {
-        setProfileDropdownOpen(false); // ✅ Close profile dropdown when clicking outside
+      if (eventsDropdownOpen || moreDropdownOpen) {
+        if (!event.target.closest('.events-dropdown-trigger') && eventsDropdownOpen) {
+          setEventsDropdownOpen(false);
+        }
+        if (!event.target.closest('.more-dropdown-trigger') && moreDropdownOpen) {
+          setMoreDropdownOpen(false);
+        }
       }
-      if (!event.target.closest(".navbar-link4-dropdown-trigger") && dropdownOpen) {
-        setDropdownOpen(false); // ✅ Close More dropdown when clicking outside
+      if (!event.target.closest('.profile-menu') && profileDropdownOpen) {
+        setProfileDropdownOpen(false);
       }
     };
 
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, [profileDropdownOpen, dropdownOpen]);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [eventsDropdownOpen, moreDropdownOpen, profileDropdownOpen]);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      // Replace with actual Strapi API call
+      setNotifications(3); // Mocked value
+    };
+    if (user) fetchNotifications();
+  }, [user]);
 
   const handleSignOut = (e) => {
     e.preventDefault();
@@ -31,291 +46,419 @@ const Navbar = ({ user, setUser, setIsModalOpen }) => {
   };
 
   return (
-    <header className="navbar-container1">
-      <div className="navbar-navbar-interactive">
-        <img alt="Logo" src="/tera-nova-logo.png" className="navbar-image" />
+    <header
+      style={{
+        top: 0,
+        width: '100%',
+        display: 'flex',
+        zIndex: 1000,
+        position: 'sticky',
+        justifyContent: 'center',
+        backgroundColor: '#FBFAF9',
+        padding: '8px 24px',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      }}
+    >
+      <div
+        style={{
+          width: '100%',
+          display: 'flex',
+          maxWidth: '1144px',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Link href="/">
+          <img
+            alt="Logo"
+            src="/tera-nova-logo.png"
+            style={{
+              width: '103px',
+              height: '78px',
+              objectFit: 'cover',
+              borderRadius: '46px',
+            }}
+          />
+        </Link>
 
-        <div className="navbar-desktop-menu">
-          <nav className="navbar-links1">
-            <Link href="/" legacyBehavior>
-              <a className="navbar-link">Home</a>
-            </Link>
-            <Link href="/events" legacyBehavior>
-              <a className="navbar-link">Events</a>
-            </Link>
-            <Link href="/reports" legacyBehavior>
-              <a className="navbar-link">Reports</a>
-            </Link>
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            justifyContent: 'space-between',
+          }}
+        >
+          <nav
+            style={{
+              gap: '32px',
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              marginLeft: '32px',
+            }}
+          >
+            <div
+              style={{
+                position: 'relative',
+              }}
+            >
+              <Link href="/" style={{ textDecoration: 'none' }}>
+                <span
+                  style={{
+                    fontSize: '16px',
+                    fontFamily: 'Titillium Web',
+                    fontWeight: 600,
+                    color: '#BF4408',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#E65103')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#BF4408')}
+                >
+                  Home
+                </span>
+              </Link>
+            </div>
 
-            {user && (
-              <div
-                className="navbar-link4-dropdown-trigger"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDropdownOpen(!dropdownOpen);
+            <div
+              className="events-dropdown-trigger"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (moreDropdownOpen) setMoreDropdownOpen(false);
+                setEventsDropdownOpen(!eventsDropdownOpen);
+              }}
+              style={{
+                position: 'relative',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: '16px',
+                  fontFamily: 'Titillium Web',
+                  fontWeight: 600,
+                  color: '#BF4408',
+                  cursor: 'pointer',
                 }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#E65103')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#BF4408')}
               >
-                <span className="thq-body-small thq-link">More</span>
-                {dropdownOpen && (
-                  <div className="navbar-dropdown">
-                    <Link href="/pending-events" legacyBehavior>
-                      <a className="dropdown-menu-item">Pending Events</a>
-                    </Link>
-                    <Link href="/reports" legacyBehavior>
-                      <a className="dropdown-menu-item">Reports</a>
-                    </Link>
-                  </div>
-                )}
-              </div>
-            )}
+                Events <span style={{ fontSize: '12px' }}>▼</span>
+              </span>
+              {eventsDropdownOpen && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 8px)',
+                    left: '-64px',
+                    backgroundColor: '#FBFAF9',
+                    border: '1px solid #BF4408',
+                    borderRadius: '8px',
+                    padding: '0.5rem',
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'flex-start',
+                    width: '400px',
+                    zIndex: 999,
+                  }}
+                >
+                  <Link href="/create-event">
+                    <span
+                      style={{
+                        padding: '0.5rem 1rem',
+                        textDecoration: 'none',
+                        color: '#BF4408',
+                        fontSize: '14px',
+                        fontFamily: 'Titillium Web',
+                        textAlign: 'center',
+                        borderRadius: '6px',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5D1B0')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      Create Event
+                    </span>
+                  </Link>
+                  <Link href="/create-shopping-list">
+                    <span
+                      style={{
+                        padding: '0.5rem 1rem',
+                        textDecoration: 'none',
+                        color: '#BF4408',
+                        fontSize: '14px',
+                        fontFamily: 'Titillium Web',
+                        textAlign: 'center',
+                        borderRadius: '6px',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5D1B0')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      Shopping List
+                    </span>
+                  </Link>
+                  <Link href="/create-group">
+                    <span
+                      style={{
+                        padding: '0.5rem 1rem',
+                        textDecoration: 'none',
+                        color: '#BF4408',
+                        fontSize: '14px',
+                        fontFamily: 'Titillium Web',
+                        textAlign: 'center',
+                        borderRadius: '6px',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5D1B0')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      Create Invitations
+                    </span>
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            <div
+              className="more-dropdown-trigger"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (eventsDropdownOpen) setEventsDropdownOpen(false);
+                setMoreDropdownOpen(!moreDropdownOpen);
+              }}
+              style={{
+                position: 'relative',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: '16px',
+                  fontFamily: 'Titillium Web',
+                  fontWeight: 600,
+                  color: '#BF4408',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#E65103')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#BF4408')}
+              >
+                More <span style={{ fontSize: '12px' }}>▼</span>
+              </span>
+              {moreDropdownOpen && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 8px)',
+                    left: '-128px',
+                    backgroundColor: '#FBFAF9',
+                    border: '1px solid #BF4408',
+                    borderRadius: '8px',
+                    padding: '0.5rem',
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'flex-start',
+                    width: '400px',
+                    zIndex: 999,
+                  }}
+                >
+                  <Link href="/pending-events">
+                    <span
+                      style={{
+                        padding: '0.5rem 1rem',
+                        textDecoration: 'none',
+                        color: '#BF4408',
+                        fontSize: '14px',
+                        fontFamily: 'Titillium Web',
+                        textAlign: 'center',
+                        borderRadius: '6px',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5D1B0')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      Pending Events
+                    </span>
+                  </Link>
+                  <Link href="/reports">
+                    <span
+                      style={{
+                        padding: '0.5rem 1rem',
+                        textDecoration: 'none',
+                        color: '#BF4408',
+                        fontSize: '14px',
+                        fontFamily: 'Titillium Web',
+                        textAlign: 'center',
+                        borderRadius: '6px',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5D1B0')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      Reporting
+                    </span>
+                  </Link>
+                  <Link href="/profile">
+                    <span
+                      style={{
+                        padding: '0.5rem 1rem',
+                        textDecoration: 'none',
+                        color: '#BF4408',
+                        fontSize: '14px',
+                        fontFamily: 'Titillium Web',
+                        textAlign: 'center',
+                        borderRadius: '6px',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5D1B0')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      Profile
+                    </span>
+                  </Link>
+                </div>
+              )}
+            </div>
           </nav>
 
-          <div className="navbar-buttons1">
+          <div
+            style={{
+              gap: '16px',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
             {!user ? (
               <>
-                <button className="navbar-action11 thq-button-animated thq-button-filled" onClick={() => router.push('/sign-up')}>
-                  <span>Get Started</span>
+                <button
+                  style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '46px',
+                    background: 'linear-gradient(90deg, #FFC78B 0%, #FFAD61 100%)',
+                    color: '#191818',
+                    fontWeight: '700',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                  }}
+                  onClick={() => router.push('/sign-up')}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#191818')}
+                >
+                  Get Started
                 </button>
-                <button className="navbar-action21 thq-button-animated thq-button-outline" onClick={() => setIsModalOpen(true)}>
-                  <span>Sign In</span>
+                <button
+                  style={{
+                    padding: '0.5rem 1rem',
+                    border: '2px solid #BF4408',
+                    borderRadius: '46px',
+                    backgroundColor: '#FFFFFF',
+                    color: '#BF4408',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                  }}
+                  onClick={() => setIsModalOpen(true)}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#FBFAF9')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
+                >
+                  Sign In
                 </button>
               </>
             ) : (
-              <div
-                className="profile-menu"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setProfileDropdownOpen(!profileDropdownOpen);
-                }}
-              >
-                {/* ✅ Restored Font Awesome Profile Icon */}
-                <i className="fa-sharp fa-solid fa-chalkboard-user fa-flip-horizontal fa-lg profile-icon"></i>
-                {profileDropdownOpen && (
-                  <div className="profile-dropdown">
-                    <Link href="/profile" legacyBehavior>
-                      <a className="profile-dropdown-item">Profile</a>
-                    </Link>
-                    <a href="#" onClick={handleSignOut} className="profile-dropdown-item">Sign Out</a>
-                  </div>
-                )}
-              </div>
+              <>
+                <div
+                  style={{
+                    position: 'relative',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '40px',
+                      color: '#BF4408',
+                    }}
+                  >
+                    🚀
+                  </span>
+                  {notifications > 0 && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: '-5px',
+                        right: '-5px',
+                        backgroundColor: '#E65103',
+                        color: 'white',
+                        borderRadius: '50%',
+                        padding: '2px 8px',
+                        fontSize: '14px',
+                      }}
+                    >
+                      {notifications}
+                    </span>
+                  )}
+                </div>
+                <div
+                  className="profile-menu"
+                  onMouseEnter={() => setProfileDropdownOpen(true)}
+                  onMouseLeave={() => setProfileDropdownOpen(false)}
+                  style={{
+                    position: 'relative',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                  }}
+                >
+                  <i
+                    className="fa-sharp fa-solid fa-chalkboard-user fa-flip-horizontal fa-lg"
+                    style={{ fontSize: '40px', color: '#BF4408' }}
+                  ></i>
+                  {profileDropdownOpen && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '100%',
+                        background: '#FBFAF9',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+                        width: '150px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        padding: '10px',
+                        zIndex: 999,
+                      }}
+                    >
+                      <a
+                        href="#"
+                        onClick={handleSignOut}
+                        style={{
+                          padding: '6px',
+                          textDecoration: 'none',
+                          color: '#BF4408',
+                          fontSize: '14px',
+                          fontFamily: 'Titillium Web',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5D1B0')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        Sign Out
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </div>
         </div>
       </div>
-      {/* Styles */}
-      <style jsx>{`
-      
-      .profile-menu {
-          position: relative;
-          cursor: pointer;
-        }
-        .profile-icon {
-          font-size: 40px; /* ✅ Ensure the new icon is properly sized */
-          color: #1263a1;
-        }
-        .profile-dropdown {
-          position: absolute;
-          top: 100%;
-          right: 0;
-          background: white;
-          border-radius: 8px;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-          width: 150px;
-          display: flex;
-          flex-direction: column;
-          padding: 10px;
-        }
-        .profile-dropdown-item {
-          padding: 6px;
-          text-decoration: none;
-          color: black;
-          font-size: 14px;
-          display: block;
-        }
-        .profile-dropdown-item:hover {
-          background-color: #f2f2f2;
-        }
-        .navbar-container1 {
-          top: 0;
-          width: 100%;
-          display: flex;
-          z-index: 1000;
-          position: sticky;
-          justify-content: center;
-          background-color: var(--dl-color-theme-neutral-light);
-        }
-        .navbar-navbar-interactive {
-          width: 100%;
-          display: flex;
-          z-index: 100;
-          max-width: var(--dl-size-size-maxwidth);
-          align-items: center;
-          padding: var(--dl-space-space-oneandhalfunits)
-            var(--dl-space-space-threeunits);
-          justify-content: space-between;
-        }
-        .navbar-image {
-          width: 103px;
-          height: 78px;
-          object-fit: cover;
-          border-radius: 46px;
-        }
-        .navbar-desktop-menu {
-          flex: 1;
-          display: flex;
-          justify-content: space-between;
-        }
-        .navbar-links1 {
-          gap: var(--dl-space-space-twounits);
-          flex: 1;
-          display: flex;
-          align-items: center;
-          margin-left: var(--dl-space-space-twounits);
-          flex-direction: row;
-          justify-content: flex-start;
-        }
-        .navbar-link11,
-        .navbar-link31 {
-          text-decoration: none;
-        }
-        .navbar-link4-dropdown-trigger {
-          position: relative;
-          gap: 4px;
-          cursor: pointer;
-          display: flex;
-          align-self: stretch;
-          align-items: center;
-          flex-direction: row;
-          justify-content: flex-end;
-        }
-        .navbar-icon-container1 {
-          display: flex;
-          align-items: center;
-          flex-direction: row;
-          justify-content: flex-end;
-        }
-        .navbar-container2 {
-          display: flex;
-          align-items: center;
-          animation-name: rotateInDownLeft;
-          animation-duration: 500ms;
-          animation-iteration-count: 1;
-        }
-        .navbar-icon10 {
-          width: 24px;
-          height: 24px;
-        }
-        .navbar-container3 {
-          display: flex;
-          align-items: center;
-          animation-name: rotateInDownRight;
-          animation-duration: 500ms;
-          animation-iteration-count: 1;
-        }
-        .navbar-icon12 {
-          width: 24px;
-          height: 24px;
-        }
-        .navbar-buttons1 {
-          gap: var(--dl-space-space-twounits);
-          display: flex;
-          align-items: center;
-          flex-direction: row;
-        }
-        .navbar-action11,
-        .navbar-action21 {
-          display: flex;
-          flex-direction: row;
-        }
-        .navbar-burger-menu {
-          display: none;
-        }
-        .navbar-icon14 {
-          width: var(--dl-size-size-xsmall);
-          height: var(--dl-size-size-xsmall);
-        }
-        /* Dropdown styles */
-        .navbar-dropdown {
-          position: absolute;
-          top: calc(100% + 8px);
-          right: 0;
-          width: 400px;
-          background-color: var(--dl-color-theme-neutral-light);
-          border: 1px solid #ccc;
-          border-radius: 8px;
-          padding: 0.5rem;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-          display: flex;
-          flex-direction: row;
-          justify-content: space-evenly;
-          align-items: center;
-          z-index: 999;
-        }
-        .dropdown-menu-item {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          text-decoration: none;
-          cursor: pointer;
-          padding: 0.5rem;
-          border-radius: 6px;
-          width: 120px;
-        }
-        .dropdown-menu-item:hover {
-          background-color: #f2f2f2;
-        }
-        /* Updated text style: reduced font size and tightened letter spacing */
-        .dropdown-menu-text {
-          font-family: inherit;
-          font-size: 0.875rem;
-          color: inherit;
-          text-align: center;
-          letter-spacing: -0.5px;
-        }
-        @media (max-width: 767px) {
-          .navbar-desktop-menu {
-            display: none;
-          }
-          .navbar-burger-menu {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-          }
-        }
-      `}</style>
     </header>
-  )
-}
+  );
+};
 
 Navbar.defaultProps = {
   imageAlt: 'Logo alt text',
   imageSrc: '/tera%20nova%20logo-400h-1500h.webp',
-  link1: null,
-  link2: null,
-  link3: null,
-  link4: null,
-  linkUrlPage1: '/pending-events',
-  linkUrlPage2: '/admin',
   setIsModalOpen: () => {},
-  action1: null,
-  action2: null,
-}
+};
 
 Navbar.propTypes = {
   imageAlt: PropTypes.string,
   imageSrc: PropTypes.string,
-  link1: PropTypes.oneOfType([PropTypes.element, PropTypes.string]),
-  link2: PropTypes.oneOfType([PropTypes.element, PropTypes.string]),
-  link3: PropTypes.oneOfType([PropTypes.element, PropTypes.string]),
-  link4: PropTypes.oneOfType([PropTypes.element, PropTypes.string]),
-  linkUrlPage1: PropTypes.string,
-  linkUrlPage2: PropTypes.string,
   setIsModalOpen: PropTypes.func,
-  action1: PropTypes.oneOfType([PropTypes.element, PropTypes.string]),
-  action2: PropTypes.oneOfType([PropTypes.element, PropTypes.string]),
-}
+  user: PropTypes.object,
+  setUser: PropTypes.func,
+};
 
-export default Navbar
-
+export default Navbar;

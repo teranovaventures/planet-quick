@@ -1,223 +1,317 @@
-import React, { useState } from 'react'
-// Remove: import Navbar from '../components/navbar'
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 
-export default function CreateShoppingListPage() {
-  // State for the shopping list title
-  const [listTitle, setListTitle] = useState('')
-  // Items: each with itemDescription, totalcost, and quantity
-  const [items, setItems] = useState([{ itemDescription: '', totalcost: '', quantity: '' }])
+export default function CreateShoppingListPage({ user }) {
+  const router = useRouter();
+  const [listTitle, setListTitle] = useState('');
+  const [items, setItems] = useState([{ itemDescription: '', totalcost: '', quantity: '' }]);
+  const [searchValue, setSearchValue] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  // Example state for an autocomplete input
-  const [searchValue, setSearchValue] = useState('')
-  const [suggestions, setSuggestions] = useState([])
+  const API_URL = 'http://localhost:1337/api/shoppinglists';
+  const STRAPI_API_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || 'YOUR_STRAPI_API_TOKEN';
 
-  // Strapi endpoint & API key
-  const API_URL = 'http://localhost:1337/api/shoppinglists'
-  const STRAPI_API_KEY = '4e9b6205a6b8f924b043b6e0a63069a9974e3ea8f33a3e7df211a88dd47373dfdf34eea19d91fe105a6d2a46eb228cb71ad4e84171eb0b393fcbc51f339fb0b37bc63103572d0c03af860efeb820cc5ba6793634b5773b48d86508932d21a7b32576292a60d12cda6f3aa95b9f1cc005a980f6f19242cc74a58b7b26a7f2649fERE'
+  useEffect(() => {
+    if (!user || !user.id) {
+      router.push('/sign-in');
+    }
+  }, [user, router]);
 
-  // (A) Autocomplete Handling
   const handleSearchChange = async (e) => {
-    const query = e.target.value
-    setSearchValue(query)
+    const query = e.target.value;
+    setSearchValue(query);
     if (query.length > 2) {
-      // Dummy suggestions for illustration
       const dummy = [
         { name: 'Coke 12 pack', price: '5.99' },
         { name: 'Coke Zero 6 pack', price: '4.49' },
-        { name: 'Diet Coke 12 pack', price: '6.49' }
-      ]
+        { name: 'Diet Coke 12 pack', price: '6.49' },
+      ];
       const filtered = dummy.filter((item) =>
         item.name.toLowerCase().includes(query.toLowerCase())
-      )
-      setSuggestions(filtered)
+      );
+      setSuggestions(filtered);
     } else {
-      setSuggestions([])
+      setSuggestions([]);
     }
-  }
+  };
 
   const handleSelectSuggestion = (product) => {
     const newItem = {
       itemDescription: product.name,
       totalcost: product.price,
-      quantity: '1'
-    }
-    setItems((prev) => [...prev, newItem])
-    // Clear the search
-    setSearchValue('')
-    setSuggestions([])
-  }
+      quantity: '1',
+    };
+    setItems((prev) => [...prev, newItem]);
+    setSearchValue('');
+    setSuggestions([]);
+  };
 
-  // (B) Items Handling
   const handleAddItem = () => {
-    setItems([...items, { itemDescription: '', totalcost: '', quantity: '' }])
-  }
+    setItems([...items, { itemDescription: '', totalcost: '', quantity: '' }]);
+  };
 
   const handleItemChange = (index, field, value) => {
-    const newItems = [...items]
-    newItems[index][field] = value
-    setItems(newItems)
-  }
+    const newItems = [...items];
+    newItems[index][field] = value;
+    setItems(newItems);
+  };
 
   const handleRemoveItem = (index) => {
-    const newItems = items.filter((_, i) => i !== index)
-    setItems(newItems)
-  }
+    const newItems = items.filter((_, i) => i !== index);
+    setItems(newItems);
+  };
 
-  // (C) Submit to Strapi
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
+    setErrorMessage('');
+
+    if (!listTitle || items.some(item => !item.itemDescription || !item.totalcost || !item.quantity)) {
+      setErrorMessage('Please fill out all required fields.');
+      return;
+    }
+
     const itemsFormatted = items.map((item) => ({
       itemDescription: item.itemDescription,
       totalcost: item.totalcost.trim() === '' ? 0 : parseFloat(item.totalcost),
-      quantity: item.quantity.trim() === '' ? 0 : parseInt(item.quantity, 10)
-    }))
-    const computedTotalCost = itemsFormatted.reduce(
-      (acc, curr) => acc + curr.totalcost,
-      0
-    )
+      quantity: item.quantity.trim() === '' ? 0 : parseInt(item.quantity, 10),
+    }));
+
+    const computedTotalCost = itemsFormatted.reduce((acc, curr) => acc + curr.totalcost, 0);
+
     const listData = {
       data: {
         title: listTitle,
         totalcost: computedTotalCost,
         state: 'pending',
-        items: itemsFormatted
-      }
-    }
+        items: itemsFormatted,
+        pqcoordinator: user.id,
+      },
+    };
 
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${STRAPI_API_KEY}`
+          Authorization: `Bearer ${STRAPI_API_TOKEN}`,
         },
-        body: JSON.stringify(listData)
-      })
-      const json = await res.json()
+        body: JSON.stringify(listData),
+      });
+
+      const json = await res.json();
       if (res.ok) {
-        alert('Shopping list created successfully!')
-        console.log('Shopping list response:', json)
-        // Reset
-        setListTitle('')
-        setItems([{ itemDescription: '', totalcost: '', quantity: '' }])
-        setSearchValue('')
-        setSuggestions([])
+        console.log('✅ Shopping list created:', json);
+        setListTitle('');
+        setItems([{ itemDescription: '', totalcost: '', quantity: '' }]);
+        setSearchValue('');
+        setSuggestions([]);
+        router.push('/pending-events');
       } else {
-        console.error('Error creating shopping list:', json)
-        alert('Failed to create shopping list. Check console for details.')
+        console.error('🚨 Error creating shopping list:', json);
+        setErrorMessage('Failed to create shopping list. Check console for details.');
       }
     } catch (error) {
-      console.error('Error:', error)
-      alert('Error creating shopping list. See console for details.')
+      console.error('🚨 Error:', error);
+      setErrorMessage('Server error. Please try again later.');
     }
-  }
+  };
 
-  // (D) Render
   return (
-    <>
-      {/* No <Navbar> here; rely on the global one in _app.js */}
-      <div className="create-shoppinglist-container">
-        <div className="page-background">
-          <div className="createevents-accent2-bg">
-            <div className="createevents-accent1-bg">
-              <div className="createevents-container2">
-                <div className="createevents-content">
-                  <h2 className="thq-heading-2">Create Shopping List</h2>
-                  <p className="thq-body-large">
-                    Add items by searching or add them manually below:
-                  </p>
+    <div className="create-shoppinglist-container">
+      <div className="page-background">
+        <div className="createevents-accent2-bg">
+          <div className="createevents-accent1-bg">
+            <div className="createevents-container2">
+              <div className="createevents-content">
+                <h2 className="thq-heading-2" style={{ fontFamily: 'STIX Two Text, serif' }}>Create Shopping List</h2>
+                <p className="thq-body-large" style={{ fontFamily: 'STIX Two Text, serif' }}>
+                  Add items by searching or add them manually below:
+                </p>
 
-                  {/* (A) Autocomplete search input */}
-                  <div className="autocomplete-section">
-                    <input
-                      type="text"
-                      className="search-bar"
-                      placeholder="Type to search..."
-                      value={searchValue}
-                      onChange={handleSearchChange}
-                    />
-                    {suggestions.length > 0 && (
-                      <div className="suggestions-container">
-                        {suggestions.map((product, i) => (
-                          <div
-                            key={i}
-                            className="suggestion-item"
-                            onClick={() => handleSelectSuggestion(product)}
-                          >
-                            {product.name} — ${product.price}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                {errorMessage && (
+                  <div
+                    style={{
+                      color: 'red',
+                      fontSize: '0.9rem',
+                      marginBottom: '0.5rem',
+                      textAlign: 'center',
+                      fontFamily: 'STIX Two Text, serif',
+                    }}
+                  >
+                    {errorMessage}
                   </div>
+                )}
 
-                  {/* The main form */}
-                  <form onSubmit={handleSubmit} className="shoppinglist-form">
-                    <label>Name Your List</label>
-                    <input
-                      type="text"
-                      value={listTitle}
-                      onChange={(e) => setListTitle(e.target.value)}
-                      required
-                    />
-
-                    <h3 className="manual-entry-heading">Add Items Manually</h3>
-                    {items.map((item, index) => (
-                      <div key={index} className="single-item">
-                        <label>Describe Item</label>
-                        <input
-                          type="text"
-                          value={item.itemDescription}
-                          onChange={(e) =>
-                            handleItemChange(index, 'itemDescription', e.target.value)
-                          }
-                          required
-                        />
-
-                        <label>Total Cost</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={item.totalcost}
-                          onChange={(e) =>
-                            handleItemChange(index, 'totalcost', e.target.value)
-                          }
-                          required
-                        />
-
-                        <label>Quantity</label>
-                        <input
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            handleItemChange(index, 'quantity', e.target.value)
-                          }
-                          required
-                        />
-
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveItem(index)}
-                          className="remove-item-button"
+                <div className="autocomplete-section">
+                  <input
+                    type="text"
+                    className="search-bar"
+                    placeholder="Type to search..."
+                    value={searchValue}
+                    onChange={handleSearchChange}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      border: '1px solid #ddd',
+                      borderRadius: '8px',
+                      fontSize: '16px',
+                      marginBottom: '0.5rem',
+                    }}
+                  />
+                  {suggestions.length > 0 && (
+                    <div className="suggestions-container">
+                      {suggestions.map((product, i) => (
+                        <div
+                          key={i}
+                          className="suggestion-item"
+                          onClick={() => handleSelectSuggestion(product)}
+                          style={{
+                            padding: '8px',
+                            cursor: 'pointer',
+                            background: '#fff',
+                            borderBottom: '1px solid #ddd',
+                          }}
                         >
-                          Remove Item
-                        </button>
-                      </div>
-                    ))}
-
-                    <button
-                      type="button"
-                      onClick={handleAddItem}
-                      className="add-item-button"
-                    >
-                      + Add Another Item
-                    </button>
-
-                    <button type="submit" className="thq-button-filled">
-                      Create Shopping List
-                    </button>
-                  </form>
+                          {product.name} — ${product.price}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
+                <form onSubmit={handleSubmit} className="shoppinglist-form">
+                  <label style={{ fontWeight: 'bold', marginBottom: '0.5rem', fontFamily: 'STIX Two Text, serif' }}>Name Your List</label>
+                  <input
+                    type="text"
+                    value={listTitle}
+                    onChange={(e) => setListTitle(e.target.value)}
+                    required
+                    style={{
+                      padding: '0.5rem',
+                      border: '1px solid #ddd',
+                      borderRadius: '8px',
+                      fontSize: '16px',
+                      width: '100%',
+                      marginBottom: '1rem',
+                    }}
+                  />
+
+                  <h3 className="manual-entry-heading" style={{ fontFamily: 'STIX Two Text, serif', fontSize: '20px', marginBottom: '1rem' }}>Add Items Manually</h3>
+                  {items.map((item, index) => (
+                    <div key={index} className="single-item" style={{ marginBottom: '1rem' }}>
+                      <label style={{ fontWeight: 'bold', marginBottom: '0.5rem', fontFamily: 'STIX Two Text, serif' }}>Describe Item</label>
+                      <input
+                        type="text"
+                        value={item.itemDescription}
+                        onChange={(e) =>
+                          handleItemChange(index, 'itemDescription', e.target.value)
+                        }
+                        required
+                        style={{
+                          padding: '0.5rem',
+                          border: '1px solid #ddd',
+                          borderRadius: '8px',
+                          fontSize: '16px',
+                          width: '100%',
+                          marginBottom: '0.5rem',
+                        }}
+                      />
+
+                      <label style={{ fontWeight: 'bold', marginBottom: '0.5rem', fontFamily: 'STIX Two Text, serif' }}>Total Cost</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={item.totalcost}
+                        onChange={(e) =>
+                          handleItemChange(index, 'totalcost', e.target.value)
+                        }
+                        required
+                        style={{
+                          padding: '0.5rem',
+                          border: '1px solid #ddd',
+                          borderRadius: '8px',
+                          fontSize: '16px',
+                          width: '100%',
+                          marginBottom: '0.5rem',
+                        }}
+                      />
+
+                      <label style={{ fontWeight: 'bold', marginBottom: '0.5rem', fontFamily: 'STIX Two Text, serif' }}>Quantity</label>
+                      <input
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) =>
+                          handleItemChange(index, 'quantity', e.target.value)
+                        }
+                        required
+                        style={{
+                          padding: '0.5rem',
+                          border: '1px solid #ddd',
+                          borderRadius: '8px',
+                          fontSize: '16px',
+                          width: '100%',
+                          marginBottom: '0.5rem',
+                        }}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveItem(index)}
+                        className="remove-item-button"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'red',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          marginTop: '0.5rem',
+                        }}
+                      >
+                        Remove Item
+                      </button>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={handleAddItem}
+                    className="add-item-button"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#1263a1',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      textAlign: 'left',
+                      padding: 0,
+                      marginBottom: '1rem',
+                    }}
+                  >
+                    + Add Another Item
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="thq-button-filled"
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '46px',
+                      background: 'linear-gradient(90deg, #FFC78B 0%, #FFAD61 100%)',
+                      color: '#191818',
+                      fontWeight: '700',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      width: '150px',
+                      alignSelf: 'center',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = '#191818')}
+                  >
+                    Create Shopping List
+                  </button>
+                </form>
               </div>
             </div>
           </div>
@@ -228,7 +322,7 @@ export default function CreateShoppingListPage() {
         .create-shoppinglist-container {
           width: 100%;
           display: flex;
-          flex-direction:row;
+          flex-direction: row;
         }
         .page-background {
           flex: 1;
@@ -244,9 +338,9 @@ export default function CreateShoppingListPage() {
           display: flex;
           transition: 0.3s;
           align-items: center;
-          border-radius: var(--dl-radius-radius-cardradius);
+          border-radius: 46px;
           justify-content: space-between;
-          background-color: var(--dl-color-theme-accent2);
+          background-color: #F5D1B0;
         }
         .createevents-accent2-bg:hover {
           transform: scale(1.02);
@@ -255,9 +349,9 @@ export default function CreateShoppingListPage() {
           width: 100%;
           display: flex;
           align-items: center;
-          border-radius: var(--dl-radius-radius-cardradius);
+          border-radius: 46px;
           justify-content: space-between;
-          background-color: var(--dl-color-theme-accent1);
+          background-color: #FFFFFF;
         }
         .createevents-container2 {
           gap: var(--dl-space-space-threeunits);
@@ -267,7 +361,7 @@ export default function CreateShoppingListPage() {
           transition: 0.3s;
           align-items: center;
           padding: var(--dl-space-space-sixunits) var(--dl-space-space-fourunits);
-          border-radius: var(--dl-radius-radius-cardradius);
+          border-radius: 46px;
         }
         .createevents-container2:hover {
           color: var(--dl-color-theme-neutral-light);
@@ -283,13 +377,14 @@ export default function CreateShoppingListPage() {
         .autocomplete-section {
           position: relative;
           width: 100%;
+          margin-bottom: 1rem;
         }
         .search-bar {
           width: 100%;
           padding: 10px;
           margin-bottom: 10px;
           border: 1px solid #ddd;
-          border-radius: var(--dl-radius-radius-buttonradius);
+          border-radius: 8px;
           font-size: 16px;
           color: #666;
         }
@@ -320,16 +415,6 @@ export default function CreateShoppingListPage() {
           text-align: left;
           width: 100%;
         }
-        .shoppinglist-form label {
-          font-weight: bold;
-        }
-        .shoppinglist-form input,
-        .shoppinglist-form select {
-          padding: 0.5rem;
-          border: 1px solid #ddd;
-          border-radius: var(--dl-radius-radius-buttonradius);
-          font-size: 16px;
-        }
         .manual-entry-heading {
           margin-top: 2rem;
           margin-bottom: 1rem;
@@ -359,15 +444,16 @@ export default function CreateShoppingListPage() {
         .thq-button-filled {
           padding: 0.75rem 1.5rem;
           border-radius: 46px;
-          background-color: var(--dl-color-theme-primary1, #c02425);
-          color: #fff;
+          background: linear-gradient(90deg, #FFC78B 0%, #FFAD61 100%);
+          color: #191818;
+          font-weight: 700;
           border: none;
           cursor: pointer;
         }
         .thq-button-filled:hover {
-          opacity: 0.9;
+          color: #FFFFFF;
         }
       `}</style>
-    </>
-  )
+    </div>
+  );
 }
