@@ -1,95 +1,130 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import RocketAnimation from '../components/RocketAnimation';
 
 export default function CreateShoppingListPage({ user }) {
-  const router = useRouter();
-  const [listTitle, setListTitle] = useState('');
-  const [items, setItems] = useState([{ itemDescription: '', totalcost: '', quantity: '' }]);
-  const [searchValue, setSearchValue] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const router = useRouter();
 
   const API_URL = 'http://localhost:1337/api/shoppinglists';
-  const STRAPI_API_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || 'YOUR_STRAPI_API_TOKEN';
+  const STRAPI_API_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '76e1da1b6c27d1c452b2de5248d6432e1a83ebd112ded6abc3773a0f80244dc865054434af3067cd4c9e18c658ac4815f8b12dfaf91ae9cc545afd4c001ee6007d7ce3e63b712a9a10b6968669276b0cd69b6b7118be8a0d122f322eeaa5391107a2856181dfd4bd58fb9984da48f7c5c241352b8a67724bb916e982e4af8b19';
 
   useEffect(() => {
     if (!user || !user.id) {
+      setErrorMessage('Please log in to create a shopping list.');
       router.push('/sign-in');
     }
   }, [user, router]);
 
-  const handleSearchChange = async (e) => {
-    const query = e.target.value;
-    setSearchValue(query);
-    if (query.length > 2) {
-      const dummy = [
-        { name: 'Coke 12 pack', price: '5.99' },
-        { name: 'Coke Zero 6 pack', price: '4.49' },
-        { name: 'Diet Coke 12 pack', price: '6.49' },
-      ];
-      const filtered = dummy.filter((item) =>
-        item.name.toLowerCase().includes(query.toLowerCase())
-      );
-      setSuggestions(filtered);
-    } else {
+  // Debounce function to limit API calls
+  const debounce = (func, delay) => {
+    let timeoutId;
+    return (...args) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => func(...args), delay);
+    };
+  };
+
+  const fetchSuggestions = async (query) => {
+    if (!query || query.length < 3) {
       setSuggestions([]);
+      return;
+    }
+    setErrorMessage('');
+
+    try {
+      const response = await fetch(`/api/redcircle?query=${encodeURIComponent(query)}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch products');
+      }
+
+      setSuggestions(data.products || data);
+      if (data.error) {
+        setErrorMessage(data.error);
+      }
+    } catch (error) {
+      console.error('Fetch Error:', error.message);
+      setSuggestions([{ name: 'Error fetching products', price: 0, image: '/placeholder.png', size: 'N/A', quantity: 1 }]);
+      setErrorMessage(`Failed to fetch suggestions: ${error.message}`);
     }
   };
 
+  const debouncedFetchSuggestions = debounce(fetchSuggestions, 300);
+
   const handleSelectSuggestion = (product) => {
-    const newItem = {
-      itemDescription: product.name,
-      totalcost: product.price,
-      quantity: '1',
-    };
-    setItems((prev) => [...prev, newItem]);
-    setSearchValue('');
+    // Directly add the selected item to the shopping list
+    const existingItem = selectedItems.find(item => item.name === product.name && item.size === product.size);
+    if (existingItem) {
+      setSelectedItems(selectedItems.map(item =>
+        item.name === product.name && item.size === product.size ? { ...item, quantity: item.quantity + 1 } : item
+      ));
+    } else {
+      setSelectedItems([...selectedItems, { ...product, quantity: 1 }]);
+    }
     setSuggestions([]);
+    setSearchQuery('');
   };
 
-  const handleAddItem = () => {
-    setItems([...items, { itemDescription: '', totalcost: '', quantity: '' }]);
+  const incrementQuantity = (index) => {
+    setSelectedItems(selectedItems.map((item, i) =>
+      i === index ? { ...item, quantity: item.quantity + 1 } : item
+    ));
   };
 
-  const handleItemChange = (index, field, value) => {
-    const newItems = [...items];
-    newItems[index][field] = value;
-    setItems(newItems);
+  const decrementQuantity = (index) => {
+    setSelectedItems(selectedItems.map((item, i) =>
+      i === index && item.quantity > 1 ? { ...item, quantity: item.quantity - 1 } : item
+    ));
   };
 
-  const handleRemoveItem = (index) => {
-    const newItems = items.filter((_, i) => i !== index);
-    setItems(newItems);
+  const removeFromList = (index) => {
+    setSelectedItems(selectedItems.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setErrorMessage('');
+  const handleManualAdd = () => {
+    const name = prompt('Enter item name:');
+    const price = prompt('Enter item price:');
+    if (name && price) {
+      setSelectedItems([...selectedItems, { name, price: parseFloat(price) || 0, size: 'N/A', image: '/placeholder.png', quantity: 1 }]);
+    }
+  };
 
-    if (!listTitle || items.some(item => !item.itemDescription || !item.totalcost || !item.quantity)) {
-      setErrorMessage('Please fill out all required fields.');
+  const calculateTotal = () => {
+    return selectedItems.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2);
+  };
+
+  const handleCreateShoppingList = async () => {
+    if (selectedItems.length === 0) {
+      setErrorMessage('Please add at least one item.');
       return;
     }
 
-    const itemsFormatted = items.map((item) => ({
-      itemDescription: item.itemDescription,
-      totalcost: item.totalcost.trim() === '' ? 0 : parseFloat(item.totalcost),
-      quantity: item.quantity.trim() === '' ? 0 : parseInt(item.quantity, 10),
+    const itemsFormatted = selectedItems.map(item => ({
+      itemDescription: item.name,
+      totalcost: item.price,
+      quantity: item.quantity,
     }));
 
-    const computedTotalCost = itemsFormatted.reduce((acc, curr) => acc + curr.totalcost, 0);
+    const computedTotalCost = selectedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
     const listData = {
       data: {
-        title: listTitle,
+        title: `Shopping List ${new Date().toISOString().split('T')[0]}`,
         totalcost: computedTotalCost,
         state: 'pending',
         items: itemsFormatted,
-        pqcoordinator: user.id,
+        pqcoordinator: user?.id || 1,
       },
     };
 
     try {
+      console.log('Sending data to Strapi:', listData);
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: {
@@ -99,361 +134,159 @@ export default function CreateShoppingListPage({ user }) {
         body: JSON.stringify(listData),
       });
 
-      const json = await res.json();
-      if (res.ok) {
-        console.log('✅ Shopping list created:', json);
-        setListTitle('');
-        setItems([{ itemDescription: '', totalcost: '', quantity: '' }]);
-        setSearchValue('');
-        setSuggestions([]);
-        router.push('/pending-events');
-      } else {
-        console.error('🚨 Error creating shopping list:', json);
-        setErrorMessage('Failed to create shopping list. Check console for details.');
+      if (!res.ok) {
+        const json = await res.json();
+        console.error('Strapi Error Response:', json);
+        setErrorMessage(json.error?.message || 'Failed to create shopping list.');
+        return;
       }
+
+      const responseData = await res.json();
+      console.log('Strapi Success Response:', responseData);
+      setShowSuccessModal(true);
     } catch (error) {
-      console.error('🚨 Error:', error);
+      console.error('Strapi Request Error:', error.message);
       setErrorMessage('Server error. Please try again later.');
     }
   };
 
+  const handleRedirect = (destination) => {
+    setShowSuccessModal(false);
+    setTimeout(() => {
+      if (destination === '/') {
+        const currentNotifications = parseInt(localStorage.getItem('notificationCount') || '0');
+        localStorage.setItem('notificationCount', (currentNotifications + 1).toString());
+        localStorage.setItem('notification', 'You have a pending shopping list!');
+      }
+      router.push(destination);
+    }, 3000);
+  };
+
   return (
-    <div className="create-shoppinglist-container">
-      <div className="page-background">
-        <div className="createevents-accent2-bg">
-          <div className="createevents-accent1-bg">
-            <div className="createevents-container2">
-              <div className="createevents-content">
-                <h2 className="thq-heading-2" style={{ fontFamily: 'STIX Two Text, serif' }}>Create Shopping List</h2>
-                <p className="thq-body-large" style={{ fontFamily: 'STIX Two Text, serif' }}>
-                  Add items by searching or add them manually below:
-                </p>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(90deg, rgb(192, 36, 37) 0%, rgba(240, 134, 53, 0.04) 100%)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
+      <div style={{ display: 'flex', width: '90%', maxWidth: '1200px', gap: '20px' }}>
+        {/* Left Section (Search and Suggestions) */}
+        <div style={{ flex: 2, padding: '40px', backgroundColor: '#F5D1B0', borderRadius: '46px', transition: '0.3s', position: 'relative' }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.02)')}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}>
+          <div style={{ padding: '48px 32px', backgroundColor: '#FFFFFF', borderRadius: '46px', boxShadow: '8px 8px 13px #2b2a2a', transition: '0.3s', minHeight: '600px' }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = 'rotateZ(3deg)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'rotateZ(0deg)')}>
+            <h2 style={{ fontSize: '35px', fontFamily: 'STIX Two Text', fontWeight: 600, lineHeight: 1.5, margin: 0 }}>Create Shopping List</h2>
+            {errorMessage && <div style={{ color: 'red', fontSize: '0.9rem', marginBottom: '0.5rem', textAlign: 'center', fontFamily: 'STIX Two Text' }}>{errorMessage}</div>}
 
-                {errorMessage && (
-                  <div
-                    style={{
-                      color: 'red',
-                      fontSize: '0.9rem',
-                      marginBottom: '0.5rem',
-                      textAlign: 'center',
-                      fontFamily: 'STIX Two Text, serif',
-                    }}
-                  >
-                    {errorMessage}
-                  </div>
-                )}
+            <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); debouncedFetchSuggestions(e.target.value); }}
+                placeholder="Search products (e.g., Coke)"
+                style={{ padding: '0.5rem', border: '1px solid #ddd', borderRadius: '8px', width: '300px', height: '40px', fontFamily: 'STIX Two Text' }}
+              />
+              <button
+                style={{ padding: '0.5rem 1.5rem', borderRadius: '46px', background: 'linear-gradient(90deg, #FFC78B 0%, #FFAD61 100%)', color: '#191818', fontWeight: '700', border: 'none', cursor: 'pointer', height: '40px', fontFamily: 'STIX Two Text' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#191818')}
+              >
+                Search
+              </button>
+            </div>
 
-                <div className="autocomplete-section">
-                  <input
-                    type="text"
-                    className="search-bar"
-                    placeholder="Type to search..."
-                    value={searchValue}
-                    onChange={handleSearchChange}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '1px solid #ddd',
-                      borderRadius: '8px',
-                      fontSize: '16px',
-                      marginBottom: '0.5rem',
-                    }}
-                  />
-                  {suggestions.length > 0 && (
-                    <div className="suggestions-container">
-                      {suggestions.map((product, i) => (
-                        <div
-                          key={i}
-                          className="suggestion-item"
-                          onClick={() => handleSelectSuggestion(product)}
-                          style={{
-                            padding: '8px',
-                            cursor: 'pointer',
-                            background: '#fff',
-                            borderBottom: '1px solid #ddd',
-                          }}
-                        >
-                          {product.name} — ${product.price}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <form onSubmit={handleSubmit} className="shoppinglist-form">
-                  <label style={{ fontWeight: 'bold', marginBottom: '0.5rem', fontFamily: 'STIX Two Text, serif' }}>Name Your List</label>
-                  <input
-                    type="text"
-                    value={listTitle}
-                    onChange={(e) => setListTitle(e.target.value)}
-                    required
-                    style={{
-                      padding: '0.5rem',
-                      border: '1px solid #ddd',
-                      borderRadius: '8px',
-                      fontSize: '16px',
-                      width: '100%',
-                      marginBottom: '1rem',
-                    }}
-                  />
-
-                  <h3 className="manual-entry-heading" style={{ fontFamily: 'STIX Two Text, serif', fontSize: '20px', marginBottom: '1rem' }}>Add Items Manually</h3>
-                  {items.map((item, index) => (
-                    <div key={index} className="single-item" style={{ marginBottom: '1rem' }}>
-                      <label style={{ fontWeight: 'bold', marginBottom: '0.5rem', fontFamily: 'STIX Two Text, serif' }}>Describe Item</label>
-                      <input
-                        type="text"
-                        value={item.itemDescription}
-                        onChange={(e) =>
-                          handleItemChange(index, 'itemDescription', e.target.value)
-                        }
-                        required
-                        style={{
-                          padding: '0.5rem',
-                          border: '1px solid #ddd',
-                          borderRadius: '8px',
-                          fontSize: '16px',
-                          width: '100%',
-                          marginBottom: '0.5rem',
-                        }}
-                      />
-
-                      <label style={{ fontWeight: 'bold', marginBottom: '0.5rem', fontFamily: 'STIX Two Text, serif' }}>Total Cost</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={item.totalcost}
-                        onChange={(e) =>
-                          handleItemChange(index, 'totalcost', e.target.value)
-                        }
-                        required
-                        style={{
-                          padding: '0.5rem',
-                          border: '1px solid #ddd',
-                          borderRadius: '8px',
-                          fontSize: '16px',
-                          width: '100%',
-                          marginBottom: '0.5rem',
-                        }}
-                      />
-
-                      <label style={{ fontWeight: 'bold', marginBottom: '0.5rem', fontFamily: 'STIX Two Text, serif' }}>Quantity</label>
-                      <input
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) =>
-                          handleItemChange(index, 'quantity', e.target.value)
-                        }
-                        required
-                        style={{
-                          padding: '0.5rem',
-                          border: '1px solid #ddd',
-                          borderRadius: '8px',
-                          fontSize: '16px',
-                          width: '100%',
-                          marginBottom: '0.5rem',
-                        }}
-                      />
-
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveItem(index)}
-                        className="remove-item-button"
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'red',
-                          cursor: 'pointer',
-                          fontSize: '14px',
-                          marginTop: '0.5rem',
-                        }}
-                      >
-                        Remove Item
-                      </button>
+            <div style={{ minHeight: '400px', marginTop: '2rem', position: 'relative' }}>
+              {suggestions.length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '15px', marginTop: '1rem' }}>
+                  {suggestions.map((suggestion, index) => (
+                    <div key={index} onClick={() => handleSelectSuggestion(suggestion)} style={{ cursor: 'pointer', textAlign: 'center', padding: '8px', border: '1px solid #ddd', borderRadius: '8px' }}>
+                      <img src={suggestion.image} alt={suggestion.name} style={{ width: '100px', height: '100px', objectFit: 'contain' }} />
+                      <p style={{ fontFamily: 'STIX Two Text', margin: '5px 0', fontWeight: '600', fontSize: '0.9rem' }}>{suggestion.name}</p>
+                      <p style={{ fontFamily: 'STIX Two Text', color: '#FFAD61', fontSize: '0.9rem' }}>${suggestion.price.toFixed(2)}</p>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
 
-                  <button
-                    type="button"
-                    onClick={handleAddItem}
-                    className="add-item-button"
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#1263a1',
-                      cursor: 'pointer',
-                      fontSize: '16px',
-                      textAlign: 'left',
-                      padding: 0,
-                      marginBottom: '1rem',
-                    }}
-                  >
-                    + Add Another Item
-                  </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2rem' }}>
+              <button
+                onClick={handleCreateShoppingList}
+                style={{ padding: '0.75rem 2rem', borderRadius: '46px', background: 'linear-gradient(90deg, #FFC78B 0%, #FFAD61 100%)', color: '#191818', fontWeight: '700', border: 'none', cursor: 'pointer', height: '50px', fontFamily: 'STIX Two Text', width: '200px' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#191818')}
+              >
+                Create List
+              </button>
+              <button
+                onClick={handleManualAdd}
+                style={{ padding: '0.75rem 2rem', borderRadius: '46px', background: '#FFFFFF', color: '#FFAD61', fontWeight: '700', border: '1px solid #FFAD61', cursor: 'pointer', height: '50px', fontFamily: 'STIX Two Text', width: '200px' }}
+              >
+                Add Manually
+              </button>
+            </div>
+          </div>
+        </div>
 
+        {/* Right Section (Selected Items List) */}
+        <div style={{ flex: 1, padding: '40px', backgroundColor: '#F5D1B0', borderRadius: '46px', transition: '0.3s', minHeight: '600px' }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.02)')}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}>
+          <div style={{ padding: '24px', backgroundColor: '#FFFFFF', borderRadius: '46px', boxShadow: '8px 8px 13px #2b2a2a', minHeight: '100%' }}>
+            <h3 style={{ fontSize: '25px', fontFamily: 'STIX Two Text', fontWeight: 600, margin: '0 0 1rem' }}>Shopping List</h3>
+            {selectedItems.length > 0 ? (
+              <div>
+                <ul style={{ listStyle: 'none', padding: 0 }}>
+                  {selectedItems.map((item, index) => (
+                    <li key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem', fontFamily: 'STIX Two Text', border: '1px solid #ddd', borderRadius: '8px', padding: '10px' }}>
+                      <img src={item.image} alt={item.name} style={{ width: '50px', height: '50px', objectFit: 'contain', marginRight: '10px' }} />
+                      <div style={{ flex: 1 }}>
+                        <span>{item.name} ({item.size}) - ${item.price.toFixed(2)}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <button onClick={() => decrementQuantity(index)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px' }}>-</button>
+                        <span>{item.quantity}</span>
+                        <button onClick={() => incrementQuantity(index)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px' }}>+</button>
+                        <button onClick={() => removeFromList(index)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', marginLeft: '10px' }}>🗑️</button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <div style={{ marginTop: '2rem' }}>
+                  <p style={{ fontFamily: 'STIX Two Text', fontWeight: '700', marginBottom: '1rem' }}>Grand Total: ${calculateTotal()}</p>
                   <button
-                    type="submit"
-                    className="thq-button-filled"
-                    style={{
-                      padding: '0.5rem 1rem',
-                      borderRadius: '46px',
-                      background: 'linear-gradient(90deg, #FFC78B 0%, #FFAD61 100%)',
-                      color: '#191818',
-                      fontWeight: '700',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      width: '150px',
-                      alignSelf: 'center',
-                    }}
+                    onClick={handleCreateShoppingList}
+                    style={{ padding: '0.75rem 2rem', borderRadius: '46px', background: 'linear-gradient(90deg, #FFC78B 0%, #FFAD61 100%)', color: '#191818', fontWeight: '700', border: 'none', cursor: 'pointer', width: '100%', fontFamily: 'STIX Two Text' }}
                     onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')}
                     onMouseLeave={(e) => (e.currentTarget.style.color = '#191818')}
                   >
-                    Create Shopping List
+                    Done
                   </button>
-                </form>
+                </div>
               </div>
-            </div>
+            ) : (
+              <p style={{ fontFamily: 'STIX Two Text', color: '#666' }}>No items selected yet.</p>
+            )}
           </div>
         </div>
       </div>
 
-      <style jsx>{`
-        .create-shoppinglist-container {
-          width: 100%;
-          display: flex;
-          flex-direction: row;
-        }
-        .page-background {
-          flex: 1;
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background-size: cover;
-          background-image: url("/dorritos.jpeg");
-        }
-        .createevents-accent2-bg {
-          gap: var(--dl-space-space-oneandhalfunits);
-          display: flex;
-          transition: 0.3s;
-          align-items: center;
-          border-radius: 46px;
-          justify-content: space-between;
-          background-color: #F5D1B0;
-        }
-        .createevents-accent2-bg:hover {
-          transform: scale(1.02);
-        }
-        .createevents-accent1-bg {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          border-radius: 46px;
-          justify-content: space-between;
-          background-color: #FFFFFF;
-        }
-        .createevents-container2 {
-          gap: var(--dl-space-space-threeunits);
-          width: 100%;
-          display: flex;
-          box-shadow: 8px 8px 13px 0px #2b2a2a;
-          transition: 0.3s;
-          align-items: center;
-          padding: var(--dl-space-space-sixunits) var(--dl-space-space-fourunits);
-          border-radius: 46px;
-        }
-        .createevents-container2:hover {
-          color: var(--dl-color-theme-neutral-light);
-          background-color: var(--dl-color-theme-neutral-dark);
-        }
-        .createevents-content {
-          gap: var(--dl-space-space-oneandhalfunits);
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          width: 100%;
-        }
-        .autocomplete-section {
-          position: relative;
-          width: 100%;
-          margin-bottom: 1rem;
-        }
-        .search-bar {
-          width: 100%;
-          padding: 10px;
-          margin-bottom: 10px;
-          border: 1px solid #ddd;
-          border-radius: 8px;
-          font-size: 16px;
-          color: #666;
-        }
-        .suggestions-container {
-          position: absolute;
-          top: 50px;
-          left: 0;
-          right: 0;
-          background: #fff;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          z-index: 10;
-          max-height: 200px;
-          overflow-y: auto;
-        }
-        .suggestion-item {
-          padding: 8px;
-          cursor: pointer;
-        }
-        .suggestion-item:hover {
-          background-color: #f2f2f2;
-        }
-        .shoppinglist-form {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-          margin-top: 1rem;
-          text-align: left;
-          width: 100%;
-        }
-        .manual-entry-heading {
-          margin-top: 2rem;
-          margin-bottom: 1rem;
-          font-size: 20px;
-          font-weight: bold;
-        }
-        .single-item {
-          margin-bottom: 1rem;
-        }
-        .add-item-button {
-          background: none;
-          border: none;
-          color: var(--dl-color-theme-primary1);
-          cursor: pointer;
-          font-size: 16px;
-          text-align: left;
-          padding: 0;
-        }
-        .remove-item-button {
-          background: none;
-          border: none;
-          color: red;
-          cursor: pointer;
-          font-size: 14px;
-          margin-top: 0.5rem;
-        }
-        .thq-button-filled {
-          padding: 0.75rem 1.5rem;
-          border-radius: 46px;
-          background: linear-gradient(90deg, #FFC78B 0%, #FFAD61 100%);
-          color: #191818;
-          font-weight: 700;
-          border: none;
-          cursor: pointer;
-        }
-        .thq-button-filled:hover {
-          color: #FFFFFF;
-        }
-      `}</style>
+      {showSuccessModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'url(/space-background.jpg)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div style={{ padding: '24px', backgroundColor: '#F5D1B0', borderRadius: '46px' }}>
+            <div style={{ padding: '24px', backgroundColor: '#FFFFFF', borderRadius: '46px', boxShadow: '8px 8px 13px #2b2a2a', textAlign: 'center' }}>
+              <RocketAnimation />
+              <button onClick={() => handleRedirect('/')} style={{ position: 'absolute', top: '10px', right: '15px', background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'black' }}>✕</button>
+              <h2 style={{ fontFamily: 'STIX Two Text', fontWeight: '700', marginBottom: '1rem' }}>Shopping List Created! 🚀</h2>
+              <p style={{ fontFamily: 'STIX Two Text', fontWeight: '700' }}>Grand Total: ${calculateTotal()}</p>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '1rem 0' }}>
+                {selectedItems.map((item, index) => (
+                  <li key={index} style={{ fontFamily: 'STIX Two Text' }}>{item.name} ({item.size}) - ${item.price.toFixed(2)} x {item.quantity}</li>
+                ))}
+              </ul>
+              <button onClick={() => handleRedirect('/create-group')} style={{ margin: '0.5rem', background: 'linear-gradient(90deg, #FFC78B 0%, #FFAD61 100%)', color: '#191818', padding: '0.75rem 2rem', borderRadius: '8px', border: 'none', fontFamily: 'STIX Two Text', fontWeight: '700' }} onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')} onMouseLeave={(e) => (e.currentTarget.style.color = '#191818')}>Create Group</button>
+              <button onClick={() => handleRedirect('/')} style={{ margin: '0.5rem', background: 'linear-gradient(90deg, #FFC78B 0%, #FFAD61 100%)', color: '#191818', padding: '0.75rem 2rem', borderRadius: '8px', border: 'none', fontFamily: 'STIX Two Text', fontWeight: '700' }} onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')} onMouseLeave={(e) => (e.currentTarget.style.color = '#191818')}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -47,8 +47,8 @@
     "pqcoordinator": {
       "type": "relation",
       "relation": "oneToOne",
-      "target": "api::pquser.pquser",
-      "inversedBy": "pqueventcoordinated"
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "pqevent"
     },
     "pqinvitationlist": {
       "type": "relation",

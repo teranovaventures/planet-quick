@@ -1,82 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import RocketAnimation from '../components/RocketAnimation';
 
 export default function CreateGroupPage({ user }) {
-  const router = useRouter();
-  const [groupTitle, setGroupTitle] = useState('');
-  const [members, setMembers] = useState([{ memberName: '', memberEmail: '' }]);
-  const [searchValue, setSearchValue] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
+  const [groupName, setGroupName] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const router = useRouter();
 
-  const API_URL = 'http://localhost:1337/api/groups';
-  const STRAPI_API_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || 'YOUR_STRAPI_API_TOKEN';
+  const STRAPI_API_URL = 'http://localhost:1337/api/groups';
+  const STRAPI_API_TOKEN = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN || '76e1da1b6c27d1c452b2de5248d6432e1a83ebd112ded6abc3773a0f80244dc865054434af3067cd4c9e18c658ac4815f8b12dfaf91ae9cc545afd4c001ee6007d7ce3e63b712a9a10b6968669276b0cd69b6b7118be8a0d122f322eeaa5391107a2856181dfd4bd58fb9984da48f7c5c241352b8a67724bb916e982e4af8b19';
 
   useEffect(() => {
+    console.log('User object:', user);
     if (!user || !user.id) {
+      setErrorMessage('Please log in to create a group.');
       router.push('/sign-in');
     }
   }, [user, router]);
 
-  const handleSearchChange = (e) => {
-    const query = e.target.value;
-    setSearchValue(query);
-
-    if (query.length > 2) {
-      const dummy = [
-        { name: 'John Smith', email: 'john@example.com' },
-        { name: 'Jane Doe', email: 'jane@example.com' },
-        { name: 'Johnny Appleseed', email: 'johnny@example.com' },
-      ];
-      const filtered = dummy.filter((item) =>
-        item.name.toLowerCase().includes(query.toLowerCase())
-      );
-      setSuggestions(filtered);
-    } else {
-      setSuggestions([]);
-    }
-  };
-
-  const handleSelectSuggestion = (person) => {
-    setMembers((prev) => [...prev, { memberName: person.name, memberEmail: person.email }]);
-    setSearchValue('');
-    setSuggestions([]);
-  };
-
-  const handleAddMember = () => {
-    setMembers([...members, { memberName: '', memberEmail: '' }]);
-  };
-
-  const handleMemberChange = (index, field, value) => {
-    const newMembers = [...members];
-    newMembers[index][field] = value;
-    setMembers(newMembers);
-  };
-
-  const handleRemoveMember = (index) => {
-    setMembers(members.filter((_, i) => i !== index));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleCreateGroup = async () => {
     setErrorMessage('');
 
-    if (!groupTitle || members.some(m => !m.memberName || !m.memberEmail)) {
-      setErrorMessage('Please fill out all required fields.');
+    if (!user || !user.id) {
+      setErrorMessage('Please log in to create a group.');
+      router.push('/sign-in');
       return;
     }
 
-    const groupData = {
-      data: {
-        title: groupTitle,
-        state: 'pending',
-        members: members,
-        pqcoordinator: user.id,
-      },
-    };
-
     try {
-      const res = await fetch(API_URL, {
+      if (!groupName) {
+        setErrorMessage('Please fill out the group name.');
+        return;
+      }
+
+      const groupData = {
+        data: {
+          groupname: groupName,
+          pqcoordinator: user.id || 1,
+        },
+      };
+
+      console.log('📡 Sending group data to Strapi:', JSON.stringify(groupData, null, 2));
+
+      const res = await fetch(STRAPI_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -85,323 +52,146 @@ export default function CreateGroupPage({ user }) {
         body: JSON.stringify(groupData),
       });
 
+      console.log('Response status:', res.status);
       const json = await res.json();
-      if (res.ok) {
-        console.log('✅ Group created:', json);
-        setGroupTitle('');
-        setMembers([{ memberName: '', memberEmail: '' }]);
-        router.push('/pending-events');
-      } else {
-        console.error('🚨 Error creating group:', json);
-        setErrorMessage('Failed to create group. Check console for details.');
+      console.log('Response data:', JSON.stringify(json, null, 2));
+
+      if (!res.ok) {
+        console.error('🚨 Error creating group in Strapi:', json);
+        setErrorMessage(
+          json.error?.message || 'Failed to create group. Check if the user exists in Strapi.'
+        );
+        return;
       }
+
+      const groupId = json.data.id;
+      console.log('✅ Group Created with ID:', groupId);
+
+      setShowSuccessModal(true);
     } catch (error) {
       console.error('🚨 Error:', error);
       setErrorMessage('Server error. Please try again later.');
     }
   };
 
+  const handleRedirect = (destination) => {
+    setTimeout(() => router.push(destination), 3000);
+  };
+
   return (
-    <div className="create-group-container">
-      <div className="page-background">
-        <div className="createevents-accent2-bg">
-          <div className="createevents-accent1-bg">
-            <div className="createevents-container2">
-              <div className="createevents-content">
-                <h2 className="thq-heading-2" style={{ fontFamily: 'STIX Two Text, serif' }}>Create Your Guest List</h2>
-                <p className="thq-body-large" style={{ fontFamily: 'STIX Two Text, serif' }}>
-                  Add new group members by searching or manually entering their details below.
-                </p>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(90deg, rgb(192, 36, 37) 0%, rgba(240, 134, 53, 0.04) 100%)',
+      }}
+    >
+      <div
+        style={{ padding: '24px', backgroundColor: '#F5D1B0', borderRadius: '46px' }}
+      >
+        <div
+          style={{ padding: '48px 32px', backgroundColor: '#FFFFFF', borderRadius: '46px', boxShadow: '8px 8px 13px 0px #2b2a2a' }}
+        >
+          <h2 style={{ fontSize: '35px', fontFamily: 'STIX Two Text', fontWeight: 600, lineHeight: 1.5, margin: 0 }}>
+            Create Group
+          </h2>
+          {errorMessage && <div style={{ color: 'red', fontSize: '0.9rem', marginBottom: '0.5rem', textAlign: 'center' }}>{errorMessage}</div>}
 
-                {errorMessage && (
-                  <div
-                    style={{
-                      color: 'red',
-                      fontSize: '0.9rem',
-                      marginBottom: '0.5rem',
-                      textAlign: 'center',
-                      fontFamily: 'STIX Two Text, serif',
-                    }}
-                  >
-                    {errorMessage}
-                  </div>
-                )}
+          <label style={{ fontWeight: 'bold', textAlign: 'left', marginBottom: '0.5rem' }}>Group Name</label>
+          <input
+            type="text"
+            value={groupName}
+            onChange={(e) => setGroupName(e.target.value)}
+            placeholder="e.g. 'Party Crew'"
+            style={{ padding: '0.5rem', border: '1px solid #ddd', borderRadius: '8px', width: '100%', marginBottom: '0.5rem' }}
+          />
 
-                <div className="autocomplete-section">
-                  <input
-                    type="text"
-                    className="search-bar"
-                    placeholder="Search potential members..."
-                    value={searchValue}
-                    onChange={handleSearchChange}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '1px solid #ddd',
-                      borderRadius: '8px',
-                      fontSize: '16px',
-                      marginBottom: '0.5rem',
-                    }}
-                  />
-                  {suggestions.length > 0 && (
-                    <div className="suggestions-container">
-                      {suggestions.map((person, i) => (
-                        <div
-                          key={i}
-                          className="suggestion-item"
-                          onClick={() => handleSelectSuggestion(person)}
-                          style={{
-                            padding: '8px',
-                            cursor: 'pointer',
-                            background: '#fff',
-                            borderBottom: '1px solid #ddd',
-                          }}
-                        >
-                          {person.name} — {person.email}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+          <button
+            style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '46px',
+              background: 'linear-gradient(90deg, #FFC78B 0%, #FFAD61 100%)',
+              color: '#191818',
+              fontWeight: '700',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '14px',
+              width: '150px',
+              alignSelf: 'center',
+            }}
+            onClick={handleCreateGroup}
+          >
+            Create Group
+          </button>
 
-                <form onSubmit={handleSubmit} className="group-form">
-                  <label style={{ fontWeight: 'bold', marginBottom: '0.5rem', fontFamily: 'STIX Two Text, serif' }}>Name Your Group</label>
-                  <input
-                    type="text"
-                    value={groupTitle}
-                    onChange={(e) => setGroupTitle(e.target.value)}
-                    required
-                    style={{
-                      padding: '0.5rem',
-                      border: '1px solid #ddd',
-                      borderRadius: '8px',
-                      fontSize: '16px',
-                      width: '100%',
-                      marginBottom: '1rem',
-                    }}
-                  />
-
-                  <h3 className="manual-entry-heading" style={{ fontFamily: 'STIX Two Text, serif', fontSize: '20px', marginBottom: '1rem' }}>Add Members Manually</h3>
-                  {members.map((m, index) => (
-                    <div key={index} className="single-member" style={{ marginBottom: '1rem' }}>
-                      <label style={{ fontWeight: 'bold', marginBottom: '0.5rem', fontFamily: 'STIX Two Text, serif' }}>Member Name</label>
-                      <input
-                        type="text"
-                        value={m.memberName}
-                        onChange={(e) =>
-                          handleMemberChange(index, 'memberName', e.target.value)
-                        }
-                        required
-                        style={{
-                          padding: '0.5rem',
-                          border: '1px solid #ddd',
-                          borderRadius: '8px',
-                          fontSize: '16px',
-                          width: '100%',
-                          marginBottom: '0.5rem',
-                        }}
-                      />
-                      <label style={{ fontWeight: 'bold', marginBottom: '0.5rem', fontFamily: 'STIX Two Text, serif' }}>Member Email</label>
-                      <input
-                        type="email"
-                        value={m.memberEmail}
-                        onChange={(e) =>
-                          handleMemberChange(index, 'memberEmail', e.target.value)
-                        }
-                        required
-                        style={{
-                          padding: '0.5rem',
-                          border: '1px solid #ddd',
-                          borderRadius: '8px',
-                          fontSize: '16px',
-                          width: '100%',
-                          marginBottom: '0.5rem',
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveMember(index)}
-                        className="remove-member-button"
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'red',
-                          cursor: 'pointer',
-                          fontSize: '14px',
-                          marginTop: '0.5rem',
-                        }}
-                      >
-                        Remove Member
-                      </button>
-                    </div>
-                  ))}
-
-                  <button
-                    type="button"
-                    onClick={handleAddMember}
-                    className="add-member-button"
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#1263a1',
-                      cursor: 'pointer',
-                      fontSize: '16px',
-                      textAlign: 'left',
-                      padding: 0,
-                      marginBottom: '1rem',
-                    }}
-                  >
-                    + Add Another Member
-                  </button>
-
-                  <button
-                    type="submit"
-                    className="thq-button-filled"
-                    style={{
-                      padding: '0.5rem 1rem',
-                      borderRadius: '46px',
-                      background: 'linear-gradient(90deg, #FFC78B 0%, #FFAD61 100%)',
-                      color: '#191818',
-                      fontWeight: '700',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      width: '150px',
-                      alignSelf: 'center',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = '#191818')}
-                  >
-                    Create Guest List
-                  </button>
-                </form>
+          {showSuccessModal && (
+            <div
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: '0',
+                bottom: 0,
+                background: 'rgba(0, 0, 0, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 2000,
+              }}
+            >
+              <div
+                style={{
+                  background: '#FFFFFF',
+                  padding: '2rem',
+                  borderRadius: '46px',
+                  textAlign: 'center',
+                  width: '550px',
+                  height: 'auto',
+                  position: 'relative',
+                  boxShadow: '8px 8px 13px 0px #2b2a2a',
+                }}
+              >
+                <RocketAnimation />
+                <button
+                  style={{
+                    position: 'absolute',
+                    top: '10px',
+                    right: '15px',
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '20px',
+                    cursor: 'pointer',
+                    color: 'black',
+                  }}
+                  onClick={() => handleRedirect('/')}
+                >
+                  ✕
+                </button>
+                <h2 style={{ marginTop: 0, marginBottom: '16px', fontSize: '35px', fontFamily: 'STIX Two Text', fontWeight: 600, lineHeight: 1.5 }}>
+                  Group Created! 🎉
+                </h2>
+                <button
+                  style={{
+                    padding: '0.5rem 1rem',
+                    borderRadius: '46px',
+                    background: 'linear-gradient(90deg, #FFC78B 0%, #FFAD61 100%)',
+                    color: '#191818',
+                    fontWeight: '700',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                  }}
+                  onClick={() => handleRedirect('/create-event')}
+                >
+                  Back to Events
+                </button>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
-
-      <style jsx>{`
-        .create-group-container {
-          width: 100%;
-          display: flex;
-          flex-direction: column;
-        }
-        .page-background {
-          flex: 1;
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background-size: cover;
-          background-image: url("/dorritos.jpeg");
-        }
-        .createevents-accent2-bg {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background-color: #F5D1B0;
-          border-radius: 46px;
-        }
-        .createevents-accent2-bg:hover {
-          transform: scale(1.02);
-        }
-        .createevents-accent1-bg {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background-color: #FFFFFF;
-          border-radius: 46px;
-        }
-        .createevents-container2 {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          padding: var(--dl-space-space-sixunits);
-          border-radius: 46px;
-          box-shadow: 8px 8px 13px 0px #2b2a2a;
-        }
-        .createevents-content {
-          display: flex;
-          flex-direction: column;
-          width: 100%;
-        }
-        .autocomplete-section {
-          position: relative;
-          width: 100%;
-          margin-bottom: 1rem;
-        }
-        .search-bar {
-          width: 100%;
-          padding: 10px;
-          border: 1px solid #ddd;
-          border-radius: 8px;
-        }
-        .suggestions-container {
-          position: absolute;
-          top: 100%;
-          background: #fff;
-          border: 1px solid #ddd;
-          max-height: 200px;
-          overflow-y: auto;
-          z-index: 10;
-        }
-        .suggestion-item {
-          padding: 8px;
-          cursor: pointer;
-        }
-        .group-form {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-          width: 100%;
-        }
-        .group-form input {
-          padding: 0.5rem;
-          border: 1px solid #ddd;
-          border-radius: 8px;
-          font-size: 16px;
-        }
-        .manual-entry-heading {
-          margin-top: 2rem;
-          margin-bottom: 1rem;
-          font-size: 20px;
-          font-weight: bold;
-        }
-        .single-member {
-          margin-bottom: 1rem;
-        }
-        .add-member-button {
-          background: none;
-          border: none;
-          color: #1263a1;
-          cursor: pointer;
-          font-size: 16px;
-          text-align: left;
-          padding: 0;
-        }
-        .remove-member-button {
-          background: none;
-          border: none;
-          color: red;
-          cursor: pointer;
-          font-size: 14px;
-          margin-top: 0.5rem;
-        }
-        .thq-button-filled {
-          padding: 0.75rem 1.5rem;
-          border-radius: 46px;
-          background: linear-gradient(90deg, #FFC78B 0%, #FFAD61 100%);
-          color: #191818;
-          font-weight: 700;
-          border: none;
-          cursor: pointer;
-        }
-        .thq-button-filled:hover {
-          color: #FFFFFF;
-        }
-      `}</style>
     </div>
   );
 }

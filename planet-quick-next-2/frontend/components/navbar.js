@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import RocketAnimation from './RocketAnimation';
 
 const Navbar = ({ user, setUser, setIsModalOpen }) => {
   const [eventsDropdownOpen, setEventsDropdownOpen] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState(0);
+  const [showNotificationAnimation, setShowNotificationAnimation] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -30,19 +32,45 @@ const Navbar = ({ user, setUser, setIsModalOpen }) => {
   }, [eventsDropdownOpen, moreDropdownOpen, profileDropdownOpen]);
 
   useEffect(() => {
-    const fetchNotifications = async () => {
-      // Replace with actual Strapi API call
-      setNotifications(3); // Mocked value
+    const updateNotifications = () => {
+      const count = localStorage.getItem('notificationCount') || '0';
+      const newCount = parseInt(count);
+      setNotifications(newCount);
+      if (newCount > notifications) {
+        setShowNotificationAnimation(true);
+      }
     };
-    if (user) fetchNotifications();
-  }, [user]);
+    updateNotifications();
+  }, []);
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const count = localStorage.getItem('notificationCount') || '0';
+      const newCount = parseInt(count);
+      setNotifications(newCount);
+      if (newCount > notifications) {
+        setShowNotificationAnimation(true);
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [notifications]);
 
   const handleSignOut = (e) => {
     e.preventDefault();
     localStorage.removeItem('user');
     localStorage.removeItem('jwt');
+    localStorage.setItem('notificationCount', '0');
+    localStorage.removeItem('notification');
+    setNotifications(0);
     setUser(null);
     router.push('/');
+  };
+
+  const clearNotifications = () => {
+    setNotifications(0);
+    localStorage.setItem('notificationCount', '0');
+    localStorage.removeItem('notification');
   };
 
   return (
@@ -70,13 +98,17 @@ const Navbar = ({ user, setUser, setIsModalOpen }) => {
       >
         <Link href="/">
           <img
-            alt="Logo"
-            src="/tera-nova-logo.png"
+            alt="Planet Quick Logo"
+            src="http://localhost:1337/uploads/pqlogo.png"
             style={{
               width: '103px',
               height: '78px',
               objectFit: 'cover',
               borderRadius: '46px',
+            }}
+            onError={(e) => {
+              console.error('Logo failed to load. Check if Strapi is running and file exists.');
+              e.target.src = '/fallback-logo.png';
             }}
           />
         </Link>
@@ -97,11 +129,7 @@ const Navbar = ({ user, setUser, setIsModalOpen }) => {
               marginLeft: '32px',
             }}
           >
-            <div
-              style={{
-                position: 'relative',
-              }}
-            >
+            <div style={{ position: 'relative' }}>
               <Link href="/" style={{ textDecoration: 'none' }}>
                 <span
                   style={{
@@ -126,9 +154,7 @@ const Navbar = ({ user, setUser, setIsModalOpen }) => {
                 if (moreDropdownOpen) setMoreDropdownOpen(false);
                 setEventsDropdownOpen(!eventsDropdownOpen);
               }}
-              style={{
-                position: 'relative',
-              }}
+              style={{ position: 'relative' }}
             >
               <span
                 style={{
@@ -223,9 +249,7 @@ const Navbar = ({ user, setUser, setIsModalOpen }) => {
                 if (eventsDropdownOpen) setEventsDropdownOpen(false);
                 setMoreDropdownOpen(!moreDropdownOpen);
               }}
-              style={{
-                position: 'relative',
-              }}
+              style={{ position: 'relative' }}
             >
               <span
                 style={{
@@ -314,13 +338,8 @@ const Navbar = ({ user, setUser, setIsModalOpen }) => {
             </div>
           </nav>
 
-          <div
-            style={{
-              gap: '16px',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
+          <div style={{ gap: '16px', display: 'flex', alignItems: 'center' }}>
+            {showNotificationAnimation && <RocketAnimation message="You’ve got a notification" />}
             {!user ? (
               <>
                 <button
@@ -359,20 +378,8 @@ const Navbar = ({ user, setUser, setIsModalOpen }) => {
               </>
             ) : (
               <>
-                <div
-                  style={{
-                    position: 'relative',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: '40px',
-                      color: '#BF4408',
-                    }}
-                  >
-                    🚀
-                  </span>
+                <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => alert(localStorage.getItem('notification') || 'No notifications')}>
+                  <span style={{ fontSize: '40px', color: '#BF4408' }}>🚀</span>
                   {notifications > 0 && (
                     <span
                       style={{
@@ -390,6 +397,24 @@ const Navbar = ({ user, setUser, setIsModalOpen }) => {
                     </span>
                   )}
                 </div>
+                {notifications > 0 && (
+                  <button
+                    style={{
+                      padding: '0.5rem 1rem',
+                      border: '2px solid #BF4408',
+                      borderRadius: '46px',
+                      backgroundColor: '#FFFFFF',
+                      color: '#BF4408',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                    }}
+                    onClick={clearNotifications}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#FBFAF9')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
+                  >
+                    Clear Notifications
+                  </button>
+                )}
                 <div
                   className="profile-menu"
                   onMouseEnter={() => setProfileDropdownOpen(true)}

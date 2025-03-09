@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Autocomplete from 'react-google-autocomplete';
 import { useRouter } from 'next/router';
+import RocketAnimation from '../components/RocketAnimation';
 
 export default function CreateEventPage({ user }) {
   const [eventName, setEventName] = useState('');
@@ -11,7 +12,6 @@ export default function CreateEventPage({ user }) {
   const [errorMessage, setErrorMessage] = useState('');
   const [showDateModal, setShowDateModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [redirectMessage, setRedirectMessage] = useState('');
   const router = useRouter();
 
   const STRAPI_API_URL = 'http://localhost:1337/api/pqevents';
@@ -50,11 +50,11 @@ export default function CreateEventPage({ user }) {
           pqenddate: eventDateTime.toISOString().split('T')[0],
           pqcreatedat: new Date().toISOString().split('T')[0],
           pqupdatedat: new Date().toISOString().split('T')[0],
-          pqcoordinator: user.id || 1, // Fallback to 1 for testing
+          pqcoordinator: user.id || 1,
         },
       };
 
-      console.log('📡 Sending event data to Strapi:', eventData);
+      console.log('📡 Sending event data to Strapi:', JSON.stringify(eventData, null, 2));
 
       const res = await fetch(STRAPI_API_URL, {
         method: 'POST',
@@ -67,7 +67,7 @@ export default function CreateEventPage({ user }) {
 
       console.log('Response status:', res.status);
       const json = await res.json();
-      console.log('Response data:', json);
+      console.log('Response data:', JSON.stringify(json, null, 2));
 
       if (!res.ok) {
         console.error('🚨 Error creating event in Strapi:', json);
@@ -81,7 +81,7 @@ export default function CreateEventPage({ user }) {
       console.log('✅ Event Created with ID:', eventId);
 
       const updateUserProfile = async () => {
-        const res = await fetch(`http://localhost:1337/api/pqusers/${user.id}`, {
+        const res = await fetch(`http://localhost:1337/api/users/${user.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -107,13 +107,14 @@ export default function CreateEventPage({ user }) {
   };
 
   const handleRedirect = (destination) => {
-    setRedirectMessage('Way to Planet Quick! 🌌');
     setTimeout(() => {
       if (destination === '/') {
+        const currentNotifications = parseInt(localStorage.getItem('notificationCount') || '0');
+        localStorage.setItem('notificationCount', (currentNotifications + 1).toString());
         localStorage.setItem('notification', 'You have a pending event!');
       }
       router.push(destination);
-    }, 2000);
+    }, 3000);
   };
 
   const handleConfirmDateTime = () => {
@@ -181,8 +182,8 @@ export default function CreateEventPage({ user }) {
                 fontSize: '35px',
                 fontFamily: 'STIX Two Text',
                 fontWeight: 600,
-                lineHeight: '1.5',
-                margin: '0',
+                lineHeight: 1.5,
+                margin: 0,
               }}
             >
               Create Your Event
@@ -486,9 +487,9 @@ export default function CreateEventPage({ user }) {
               height: 'auto',
               position: 'relative',
               boxShadow: '8px 8px 13px 0px #2b2a2a',
-              animation: 'fadeIn 0.5s ease-in-out',
             }}
           >
+            <RocketAnimation />
             <button
               style={{
                 position: 'absolute',
@@ -516,20 +517,6 @@ export default function CreateEventPage({ user }) {
             >
               Event Created! 🎉
             </h2>
-            <p
-              id="redirectMessage"
-              style={{
-                textAlign: 'center',
-                fontSize: '24px',
-                fontWeight: 'bold',
-                marginBottom: '20px',
-                color: '#00ffff',
-                animation: 'galacticSpin 2s infinite',
-                fontFamily: 'STIX Two Text, serif',
-              }}
-            >
-              {redirectMessage}
-            </p>
             <div
               style={{
                 display: 'flex',
@@ -580,13 +567,6 @@ export default function CreateEventPage({ user }) {
         @keyframes fadeIn {
           0% { opacity: 0; transform: scale(0.9); }
           100% { opacity: 1; transform: scale(1); }
-        }
-        @keyframes galacticSpin {
-          0% { transform: rotate(0deg) scale(1); color: #00ffff; }
-          25% { transform: rotate(90deg) scale(1.1); color: #ff00ff; }
-          50% { transform: rotate(180deg) scale(1); color: #ffff00; }
-          75% { transform: rotate(270deg) scale(1.1); color: #00ff00; }
-          100% { transform: rotate(360deg) scale(1); color: #00ffff; }
         }
       `}</style>
     </div>

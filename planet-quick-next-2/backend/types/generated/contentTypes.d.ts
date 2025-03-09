@@ -717,6 +717,11 @@ export interface PluginUsersPermissionsUser extends Schema.CollectionType {
       'manyToOne',
       'plugin::users-permissions.role'
     >;
+    pqevent: Attribute.Relation<
+      'plugin::users-permissions.user',
+      'oneToOne',
+      'api::pqevent.pqevent'
+    >;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<
@@ -799,7 +804,7 @@ export interface ApiPqeventPqevent extends Schema.CollectionType {
     pqcoordinator: Attribute.Relation<
       'api::pqevent.pqevent',
       'oneToOne',
-      'api::pquser.pquser'
+      'plugin::users-permissions.user'
     >;
     pqinvitationlist: Attribute.Relation<
       'api::pqevent.pqevent',
@@ -991,11 +996,6 @@ export interface ApiPquserPquser extends Schema.CollectionType {
     pqcohostedevents: Attribute.Relation<
       'api::pquser.pquser',
       'manyToMany',
-      'api::pqevent.pqevent'
-    >;
-    pqueventcoordinated: Attribute.Relation<
-      'api::pquser.pquser',
-      'oneToOne',
       'api::pqevent.pqevent'
     >;
     createdAt: Attribute.DateTime;
