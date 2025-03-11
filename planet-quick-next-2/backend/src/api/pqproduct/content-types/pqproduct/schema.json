@@ -1,0 +1,40 @@
+{
+  "kind": "collectionType",
+  "collectionName": "pqproducts",
+  "info": {
+    "singularName": "pqproduct",
+    "pluralName": "pqproducts",
+    "displayName": "pqproduct",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "pqproductname": {
+      "type": "string"
+    },
+    "pqproductavailability": {
+      "type": "string"
+    },
+    "pqproductimage": {
+      "type": "media",
+      "multiple": true,
+      "required": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    },
+    "pqproductprice": {
+      "type": "decimal"
+    },
+    "pqstore_id": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::pqstore.pqstore"
+    }
+  }
+}

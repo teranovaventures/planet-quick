@@ -1,0 +1,21 @@
+{
+  "collectionName": "components_memberevent_pqmembers",
+  "info": {
+    "displayName": "pqmembers"
+  },
+  "options": {},
+  "attributes": {
+    "pqfirstname": {
+      "type": "string"
+    },
+    "pqlastname": {
+      "type": "string"
+    },
+    "pqemail": {
+      "type": "email"
+    },
+    "pqphone": {
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "collectionName": "components_memberevent_pqvolunteers",
+  "info": {
+    "displayName": "pqvolunteers"
+  },
+  "options": {},
+  "attributes": {
+    "pqdescription": {
+      "type": "string"
+    },
+    "pqquantity": {
+      "type": "integer"
+    }
+  }
+}

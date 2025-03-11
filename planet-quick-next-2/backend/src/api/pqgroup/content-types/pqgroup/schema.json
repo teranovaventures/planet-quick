@@ -1,0 +1,43 @@
+{
+  "kind": "collectionType",
+  "collectionName": "pqgroups",
+  "info": {
+    "singularName": "pqgroup",
+    "pluralName": "pqgroups",
+    "displayName": "pqgroup",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "pqgroupname": {
+      "type": "string",
+      "required": true
+    },
+    "pqevent": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::pqevent.pqevent",
+      "inversedBy": "pqgroup"
+    },
+    "pqeventdate": {
+      "type": "date",
+      "required": true
+    },
+    "pqhashtags": {
+      "type": "string"
+    },
+    "pqmembers": {
+      "displayName": "pqmembers",
+      "type": "component",
+      "repeatable": true,
+      "component": "memberevent.pqmembers"
+    },
+    "pqvolunteers": {
+      "type": "component",
+      "repeatable": true,
+      "component": "memberevent.pqvolunteers"
+    }
+  }
+}

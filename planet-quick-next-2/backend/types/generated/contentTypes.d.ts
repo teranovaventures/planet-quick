@@ -831,6 +831,21 @@ export interface ApiPqeventPqevent extends Schema.CollectionType {
       'oneToMany',
       'api::pqinvitation.pqinvitation'
     >;
+    pqgroups: Attribute.Relation<
+      'api::pqevent.pqevent',
+      'oneToMany',
+      'api::pqgroup.pqgroup'
+    >;
+    pqgroup: Attribute.Relation<
+      'api::pqevent.pqevent',
+      'oneToMany',
+      'api::pqgroup.pqgroup'
+    >;
+    pqcreator: Attribute.Relation<
+      'api::pqevent.pqevent',
+      'manyToOne',
+      'api::pquser.pquser'
+    >;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     publishedAt: Attribute.DateTime;
@@ -842,6 +857,46 @@ export interface ApiPqeventPqevent extends Schema.CollectionType {
       Attribute.Private;
     updatedBy: Attribute.Relation<
       'api::pqevent.pqevent',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+  };
+}
+
+export interface ApiPqgroupPqgroup extends Schema.CollectionType {
+  collectionName: 'pqgroups';
+  info: {
+    singularName: 'pqgroup';
+    pluralName: 'pqgroups';
+    displayName: 'pqgroup';
+    description: '';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    pqgroupname: Attribute.String & Attribute.Required;
+    pqevent: Attribute.Relation<
+      'api::pqgroup.pqgroup',
+      'manyToOne',
+      'api::pqevent.pqevent'
+    >;
+    pqeventdate: Attribute.Date & Attribute.Required;
+    pqhashtags: Attribute.String;
+    pqmembers: Attribute.Component<'memberevent.pqmembers', true>;
+    pqvolunteers: Attribute.Component<'memberevent.pqvolunteers', true>;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    publishedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::pqgroup.pqgroup',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'api::pqgroup.pqgroup',
       'oneToOne',
       'admin::user'
     > &
@@ -928,6 +983,45 @@ export interface ApiPqpaymentPqpayment extends Schema.CollectionType {
   };
 }
 
+export interface ApiPqproductPqproduct extends Schema.CollectionType {
+  collectionName: 'pqproducts';
+  info: {
+    singularName: 'pqproduct';
+    pluralName: 'pqproducts';
+    displayName: 'pqproduct';
+    description: '';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    pqproductname: Attribute.String;
+    pqproductavailability: Attribute.String;
+    pqproductimage: Attribute.Media;
+    pqproductprice: Attribute.Decimal;
+    pqstore_id: Attribute.Relation<
+      'api::pqproduct.pqproduct',
+      'oneToMany',
+      'api::pqstore.pqstore'
+    >;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    publishedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::pqproduct.pqproduct',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'api::pqproduct.pqproduct',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+  };
+}
+
 export interface ApiPqshoppinglistPqshoppinglist extends Schema.CollectionType {
   collectionName: 'pqshoppinglists';
   info: {
@@ -968,6 +1062,39 @@ export interface ApiPqshoppinglistPqshoppinglist extends Schema.CollectionType {
   };
 }
 
+export interface ApiPqstorePqstore extends Schema.CollectionType {
+  collectionName: 'pqstores';
+  info: {
+    singularName: 'pqstore';
+    pluralName: 'pqstores';
+    displayName: 'pqstore';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    pqstorename: Attribute.String;
+    pqstoreaddress: Attribute.String;
+    pqstorelocation: Attribute.JSON;
+    pqplaceid: Attribute.String;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    publishedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::pqstore.pqstore',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'api::pqstore.pqstore',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+  };
+}
+
 export interface ApiPquserPquser extends Schema.CollectionType {
   collectionName: 'pqusers';
   info: {
@@ -996,6 +1123,11 @@ export interface ApiPquserPquser extends Schema.CollectionType {
     pqcohostedevents: Attribute.Relation<
       'api::pquser.pquser',
       'manyToMany',
+      'api::pqevent.pqevent'
+    >;
+    pqevents: Attribute.Relation<
+      'api::pquser.pquser',
+      'oneToMany',
       'api::pqevent.pqevent'
     >;
     createdAt: Attribute.DateTime;
@@ -1035,9 +1167,12 @@ declare module '@strapi/types' {
       'plugin::users-permissions.user': PluginUsersPermissionsUser;
       'api::pqbusinessaccount.pqbusinessaccount': ApiPqbusinessaccountPqbusinessaccount;
       'api::pqevent.pqevent': ApiPqeventPqevent;
+      'api::pqgroup.pqgroup': ApiPqgroupPqgroup;
       'api::pqinvitation.pqinvitation': ApiPqinvitationPqinvitation;
       'api::pqpayment.pqpayment': ApiPqpaymentPqpayment;
+      'api::pqproduct.pqproduct': ApiPqproductPqproduct;
       'api::pqshoppinglist.pqshoppinglist': ApiPqshoppinglistPqshoppinglist;
+      'api::pqstore.pqstore': ApiPqstorePqstore;
       'api::pquser.pquser': ApiPquserPquser;
     }
   }

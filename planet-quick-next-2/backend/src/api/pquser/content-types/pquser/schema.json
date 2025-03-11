@@ -71,6 +71,12 @@
       "relation": "manyToMany",
       "target": "api::pqevent.pqevent",
       "mappedBy": "pqcohosts"
+    },
+    "pqevents": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::pqevent.pqevent",
+      "mappedBy": "pqcreator"
     }
   }
 }

@@ -1,0 +1,26 @@
+{
+  "kind": "collectionType",
+  "collectionName": "pqstores",
+  "info": {
+    "singularName": "pqstore",
+    "pluralName": "pqstores",
+    "displayName": "pqstore"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "pqstorename": {
+      "type": "string"
+    },
+    "pqstoreaddress": {
+      "type": "string"
+    },
+    "pqstorelocation": {
+      "type": "json"
+    },
+    "pqplaceid": {
+      "type": "string"
+    }
+  }
+}
