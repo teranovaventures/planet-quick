@@ -71,7 +71,7 @@
       "type": "relation",
       "relation": "oneToMany",
       "target": "api::pqpayment.pqpayment",
-      "mappedBy": "pqeventpayment"
+      "mappedBy": "pqpayment"
     },
     "pqeventinvitations": {
       "type": "relation",
@@ -79,22 +79,16 @@
       "target": "api::pqinvitation.pqinvitation",
       "mappedBy": "pqeventinvited"
     },
-    "pqgroups": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::pqgroup.pqgroup"
-    },
-    "pqgroup": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::pqgroup.pqgroup",
-      "mappedBy": "pqevent"
-    },
     "pqcreator": {
       "type": "relation",
       "relation": "manyToOne",
       "target": "api::pquser.pquser",
       "inversedBy": "pqevents"
+    },
+    "pqeventpayments": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::pqpayment.pqpayment"
     }
   }
 }

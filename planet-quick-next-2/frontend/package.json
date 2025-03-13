@@ -12,6 +12,7 @@
   "author": "TeleportHQ",
   "license": "MIT",
   "dependencies": {
+    "@google-cloud/vision": "^4.3.3",
     "dangerous-html": "0.1.13",
     "next": "^13.4.12",
     "next-intl": "2.22.1",

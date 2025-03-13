@@ -35,6 +35,18 @@
       "type": "relation",
       "relation": "oneToMany",
       "target": "api::pqstore.pqstore"
+    },
+    "variantOf": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::pqproduct.pqproduct",
+      "inversedBy": "variants"
+    },
+    "variants": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::pqproduct.pqproduct",
+      "mappedBy": "variantOf"
     }
   }
 }

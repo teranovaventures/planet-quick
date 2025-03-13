@@ -1,9 +1,9 @@
 'use strict';
 
 /**
- * pqproduct router
+ * pqliveevent router
  */
 
 const { createCoreRouter } = require('@strapi/strapi').factories;
 
-module.exports = createCoreRouter('api::pqproduct.pqproduct');
+module.exports = createCoreRouter('api::pqliveevent.pqliveevent');

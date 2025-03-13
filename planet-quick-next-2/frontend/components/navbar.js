@@ -4,7 +4,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import RocketAnimation from './RocketAnimation';
 
-const Navbar = ({ user, setUser, setIsModalOpen }) => {
+const Navbar = ({
+  user,
+  setUser,
+  setIsModalOpen = () => {}, // Default parameter for setIsModalOpen
+  imageAlt = 'Logo alt text', // Default parameter for imageAlt
+  imageSrc = '/tera%20nova%20logo-400h-1500h.webp', // Default parameter for imageSrc
+}) => {
   const [eventsDropdownOpen, setEventsDropdownOpen] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -98,8 +104,8 @@ const Navbar = ({ user, setUser, setIsModalOpen }) => {
       >
         <Link href="/">
           <img
-            alt="Planet Quick Logo"
-            src="http://localhost:1337/uploads/pqlogo.png"
+            alt={imageAlt}
+            src={imageSrc}
             style={{
               width: '103px',
               height: '78px',
@@ -470,12 +476,6 @@ const Navbar = ({ user, setUser, setIsModalOpen }) => {
       </div>
     </header>
   );
-};
-
-Navbar.defaultProps = {
-  imageAlt: 'Logo alt text',
-  imageSrc: '/tera%20nova%20logo-400h-1500h.webp',
-  setIsModalOpen: () => {},
 };
 
 Navbar.propTypes = {

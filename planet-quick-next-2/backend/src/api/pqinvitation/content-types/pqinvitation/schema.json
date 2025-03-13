@@ -11,14 +11,34 @@
     "draftAndPublish": true
   },
   "attributes": {
-    "pqeventid": {
-      "type": "string"
-    },
     "pqeventinvited": {
       "type": "relation",
       "relation": "manyToOne",
       "target": "api::pqevent.pqevent",
       "inversedBy": "pqeventinvitations"
+    },
+    "pqfirstname": {
+      "type": "string",
+      "required": true
+    },
+    "pqlastname": {
+      "type": "string",
+      "required": true
+    },
+    "pqemail": {
+      "type": "email",
+      "required": true
+    },
+    "pqphone": {
+      "type": "string"
+    },
+    "pqinvitestatus": {
+      "type": "enumeration",
+      "enum": [
+        "pending",
+        "accepted",
+        "declined"
+      ]
     }
   }
 }

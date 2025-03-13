@@ -1,0 +1,59 @@
+{
+  "kind": "collectionType",
+  "collectionName": "pqliveevents",
+  "info": {
+    "singularName": "pqliveevent",
+    "pluralName": "pqliveevents",
+    "displayName": "pqliveevent",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "pqeventname": {
+      "type": "string",
+      "required": true
+    },
+    "pqstartdate": {
+      "type": "date",
+      "required": true
+    },
+    "pqcontributiondeadline": {
+      "type": "datetime"
+    },
+    "pqdeliveryrequired": {
+      "type": "boolean"
+    },
+    "pqdeliverydate": {
+      "type": "datetime"
+    },
+    "pqdeliverylocation": {
+      "type": "string"
+    },
+    "pqevent": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::pqevent.pqevent"
+    },
+    "pqshoppinglist": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::pqshoppinglist.pqshoppinglist"
+    },
+    "pqinvitation": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::pqinvitation.pqinvitation"
+    },
+    "pqeventstatus": {
+      "type": "enumeration",
+      "enum": [
+        "pending",
+        "active",
+        "past"
+      ],
+      "required": true
+    }
+  }
+}

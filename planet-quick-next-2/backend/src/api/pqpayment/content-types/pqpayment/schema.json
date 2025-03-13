@@ -4,7 +4,7 @@
   "info": {
     "singularName": "pqpayment",
     "pluralName": "pqpayments",
-    "displayName": "pqpayment",
+    "displayName": "pqeventpayment",
     "description": ""
   },
   "options": {
@@ -47,7 +47,7 @@
     "pqupdatedat": {
       "type": "date"
     },
-    "pqeventpayment": {
+    "pqpayment": {
       "type": "relation",
       "relation": "manyToOne",
       "target": "api::pqevent.pqevent",

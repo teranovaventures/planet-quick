@@ -831,72 +831,27 @@ export interface ApiPqeventPqevent extends Schema.CollectionType {
       'oneToMany',
       'api::pqinvitation.pqinvitation'
     >;
-    pqgroups: Attribute.Relation<
-      'api::pqevent.pqevent',
-      'oneToMany',
-      'api::pqgroup.pqgroup'
-    >;
-    pqgroup: Attribute.Relation<
-      'api::pqevent.pqevent',
-      'oneToMany',
-      'api::pqgroup.pqgroup'
-    >;
     pqcreator: Attribute.Relation<
       'api::pqevent.pqevent',
       'manyToOne',
       'api::pquser.pquser'
     >;
-    createdAt: Attribute.DateTime;
-    updatedAt: Attribute.DateTime;
-    publishedAt: Attribute.DateTime;
-    createdBy: Attribute.Relation<
+    pqeventpayments: Attribute.Relation<
       'api::pqevent.pqevent',
-      'oneToOne',
-      'admin::user'
-    > &
-      Attribute.Private;
-    updatedBy: Attribute.Relation<
-      'api::pqevent.pqevent',
-      'oneToOne',
-      'admin::user'
-    > &
-      Attribute.Private;
-  };
-}
-
-export interface ApiPqgroupPqgroup extends Schema.CollectionType {
-  collectionName: 'pqgroups';
-  info: {
-    singularName: 'pqgroup';
-    pluralName: 'pqgroups';
-    displayName: 'pqgroup';
-    description: '';
-  };
-  options: {
-    draftAndPublish: true;
-  };
-  attributes: {
-    pqgroupname: Attribute.String & Attribute.Required;
-    pqevent: Attribute.Relation<
-      'api::pqgroup.pqgroup',
-      'manyToOne',
-      'api::pqevent.pqevent'
+      'oneToMany',
+      'api::pqpayment.pqpayment'
     >;
-    pqeventdate: Attribute.Date & Attribute.Required;
-    pqhashtags: Attribute.String;
-    pqmembers: Attribute.Component<'memberevent.pqmembers', true>;
-    pqvolunteers: Attribute.Component<'memberevent.pqvolunteers', true>;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     publishedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<
-      'api::pqgroup.pqgroup',
+      'api::pqevent.pqevent',
       'oneToOne',
       'admin::user'
     > &
       Attribute.Private;
     updatedBy: Attribute.Relation<
-      'api::pqgroup.pqgroup',
+      'api::pqevent.pqevent',
       'oneToOne',
       'admin::user'
     > &
@@ -916,12 +871,16 @@ export interface ApiPqinvitationPqinvitation extends Schema.CollectionType {
     draftAndPublish: true;
   };
   attributes: {
-    pqeventid: Attribute.String;
     pqeventinvited: Attribute.Relation<
       'api::pqinvitation.pqinvitation',
       'manyToOne',
       'api::pqevent.pqevent'
     >;
+    pqfirstname: Attribute.String & Attribute.Required;
+    pqlastname: Attribute.String & Attribute.Required;
+    pqemail: Attribute.Email & Attribute.Required;
+    pqphone: Attribute.String;
+    pqinvitestatus: Attribute.Enumeration<['pending', 'accepted', 'declined']>;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     publishedAt: Attribute.DateTime;
@@ -940,12 +899,65 @@ export interface ApiPqinvitationPqinvitation extends Schema.CollectionType {
   };
 }
 
+export interface ApiPqliveeventPqliveevent extends Schema.CollectionType {
+  collectionName: 'pqliveevents';
+  info: {
+    singularName: 'pqliveevent';
+    pluralName: 'pqliveevents';
+    displayName: 'pqliveevent';
+    description: '';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    pqeventname: Attribute.String & Attribute.Required;
+    pqstartdate: Attribute.Date & Attribute.Required;
+    pqcontributiondeadline: Attribute.DateTime;
+    pqdeliveryrequired: Attribute.Boolean;
+    pqdeliverydate: Attribute.DateTime;
+    pqdeliverylocation: Attribute.String;
+    pqevent: Attribute.Relation<
+      'api::pqliveevent.pqliveevent',
+      'oneToOne',
+      'api::pqevent.pqevent'
+    >;
+    pqshoppinglist: Attribute.Relation<
+      'api::pqliveevent.pqliveevent',
+      'oneToOne',
+      'api::pqshoppinglist.pqshoppinglist'
+    >;
+    pqinvitation: Attribute.Relation<
+      'api::pqliveevent.pqliveevent',
+      'oneToOne',
+      'api::pqinvitation.pqinvitation'
+    >;
+    pqeventstatus: Attribute.Enumeration<['pending', 'active', 'past']> &
+      Attribute.Required;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    publishedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::pqliveevent.pqliveevent',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'api::pqliveevent.pqliveevent',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+  };
+}
+
 export interface ApiPqpaymentPqpayment extends Schema.CollectionType {
   collectionName: 'pqpayments';
   info: {
     singularName: 'pqpayment';
     pluralName: 'pqpayments';
-    displayName: 'pqpayment';
+    displayName: 'pqeventpayment';
     description: '';
   };
   options: {
@@ -960,7 +972,7 @@ export interface ApiPqpaymentPqpayment extends Schema.CollectionType {
     pqcoordinatorinfo: Attribute.JSON;
     pqcreatedat: Attribute.Date;
     pqupdatedat: Attribute.Date;
-    pqeventpayment: Attribute.Relation<
+    pqpayment: Attribute.Relation<
       'api::pqpayment.pqpayment',
       'manyToOne',
       'api::pqevent.pqevent'
@@ -1003,6 +1015,16 @@ export interface ApiPqproductPqproduct extends Schema.CollectionType {
       'api::pqproduct.pqproduct',
       'oneToMany',
       'api::pqstore.pqstore'
+    >;
+    variantOf: Attribute.Relation<
+      'api::pqproduct.pqproduct',
+      'manyToOne',
+      'api::pqproduct.pqproduct'
+    >;
+    variants: Attribute.Relation<
+      'api::pqproduct.pqproduct',
+      'oneToMany',
+      'api::pqproduct.pqproduct'
     >;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
@@ -1167,8 +1189,8 @@ declare module '@strapi/types' {
       'plugin::users-permissions.user': PluginUsersPermissionsUser;
       'api::pqbusinessaccount.pqbusinessaccount': ApiPqbusinessaccountPqbusinessaccount;
       'api::pqevent.pqevent': ApiPqeventPqevent;
-      'api::pqgroup.pqgroup': ApiPqgroupPqgroup;
       'api::pqinvitation.pqinvitation': ApiPqinvitationPqinvitation;
+      'api::pqliveevent.pqliveevent': ApiPqliveeventPqliveevent;
       'api::pqpayment.pqpayment': ApiPqpaymentPqpayment;
       'api::pqproduct.pqproduct': ApiPqproductPqproduct;
       'api::pqshoppinglist.pqshoppinglist': ApiPqshoppinglistPqshoppinglist;
