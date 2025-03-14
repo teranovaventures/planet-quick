@@ -1,1 +1,12 @@
-{}
+{
+    "Eventslist": {
+      "title": "Event List",
+      "switchToWeekly": "Switch to Weekly",
+      "switchToMonthly": "Switch to Monthly",
+      "noEvents": "No events available"
+    },
+    "Toppagephotos": {
+      "heading1": "Coordinate Events with Ease",
+      "content1": "Simplify event planning and increase community engagement through our user-friendly platform. Create, schedule, and crowdfund events effortlessly."
+    }
+  }

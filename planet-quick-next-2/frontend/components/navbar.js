@@ -1,142 +1,108 @@
-import React, { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
+import Image from 'next/image';
+import Router from 'next/router';
 import RocketAnimation from './RocketAnimation';
 
-const Navbar = ({
-  user,
-  setUser,
-  setIsModalOpen = () => {}, // Default parameter for setIsModalOpen
-  imageAlt = 'Logo alt text', // Default parameter for imageAlt
-  imageSrc = '/tera%20nova%20logo-400h-1500h.webp', // Default parameter for imageSrc
-}) => {
+const Navbar = ({ user, setUser, setIsModalOpen, notificationCount, notificationMessage, clearNotifications }) => {
   const [eventsDropdownOpen, setEventsDropdownOpen] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState(0);
   const [showNotificationAnimation, setShowNotificationAnimation] = useState(false);
-  const router = useRouter();
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (eventsDropdownOpen || moreDropdownOpen) {
-        if (!event.target.closest('.events-dropdown-trigger') && eventsDropdownOpen) {
-          setEventsDropdownOpen(false);
+    const fetchPendingEvents = async () => {
+      try {
+        const res = await fetch('/api/events');
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('API Response:', errorText);
+          throw new Error('Failed to fetch events');
         }
-        if (!event.target.closest('.more-dropdown-trigger') && moreDropdownOpen) {
-          setMoreDropdownOpen(false);
-        }
-      }
-      if (!event.target.closest('.profile-menu') && profileDropdownOpen) {
-        setProfileDropdownOpen(false);
+        const data = await res.json();
+        const pendingEvents = data.data.filter(e => e.status === 'pending');
+        setNotifications(pendingEvents.length);
+      } catch (err) {
+        console.error('Failed to fetch pending events:', err);
+        setNotifications(0); // Default to 0 if fetch fails
       }
     };
-
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [eventsDropdownOpen, moreDropdownOpen, profileDropdownOpen]);
-
-  useEffect(() => {
-    const updateNotifications = () => {
-      const count = localStorage.getItem('notificationCount') || '0';
-      const newCount = parseInt(count);
-      setNotifications(newCount);
-      if (newCount > notifications) {
-        setShowNotificationAnimation(true);
-      }
-    };
-    updateNotifications();
+    fetchPendingEvents();
+    const interval = setInterval(fetchPendingEvents, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
-    const handleStorageChange = () => {
-      const count = localStorage.getItem('notificationCount') || '0';
-      const newCount = parseInt(count);
-      setNotifications(newCount);
-      if (newCount > notifications) {
-        setShowNotificationAnimation(true);
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [notifications]);
+    if (notificationCount > 0) {
+      setShowNotificationAnimation(true);
+      setTimeout(() => setShowNotificationAnimation(false), 3000);
+    }
+  }, [notificationCount]);
 
-  const handleSignOut = (e) => {
-    e.preventDefault();
+  const handleSignOut = () => {
+    setUser(null);
     localStorage.removeItem('user');
     localStorage.removeItem('jwt');
-    localStorage.setItem('notificationCount', '0');
-    localStorage.removeItem('notification');
-    setNotifications(0);
-    setUser(null);
-    router.push('/');
-  };
-
-  const clearNotifications = () => {
-    setNotifications(0);
-    localStorage.setItem('notificationCount', '0');
-    localStorage.removeItem('notification');
+    clearNotifications();
+    Router.push('/');
   };
 
   return (
-    <header
-      style={{
-        top: 0,
-        width: '100%',
-        display: 'flex',
-        zIndex: 1000,
-        position: 'sticky',
-        justifyContent: 'center',
-        backgroundColor: '#FBFAF9',
-        padding: '8px 24px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-      }}
-    >
+    <header>
       <div
         style={{
           width: '100%',
           display: 'flex',
-          maxWidth: '1144px',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          zIndex: 1000,
+          position: 'sticky',
+          paddingTop: '24px',
+          paddingBottom: '24px',
+          justifyContent: 'center',
+          backgroundColor: '#FFFFFF',
         }}
       >
-        <Link href="/">
-          <img
-            alt={imageAlt}
-            src={imageSrc}
-            style={{
-              width: '103px',
-              height: '78px',
-              objectFit: 'cover',
-              borderRadius: '46px',
-            }}
-            onError={(e) => {
-              console.error('Logo failed to load. Check if Strapi is running and file exists.');
-              e.target.src = '/fallback-logo.png';
-            }}
-          />
-        </Link>
-
         <div
           style={{
-            flex: 1,
+            width: '100%',
             display: 'flex',
+            maxWidth: '1144px',
+            alignItems: 'center',
+            paddingLeft: '24px',
+            paddingRight: '24px',
             justifyContent: 'space-between',
           }}
         >
-          <nav
-            style={{
-              gap: '32px',
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              marginLeft: '32px',
-            }}
-          >
-            <div style={{ position: 'relative' }}>
-              <Link href="/" style={{ textDecoration: 'none' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <Link href="/">
+  <Image src="/logo.png" alt="PlanetQuick Logo" width={90} height={85} style={{ borderRadius: '46px' }} />
+</Link>
+            <nav style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+              <Link href="/">
+                <span
+                  style={{
+                    fontSize: '16px',
+                    fontFamily: 'Titillium Web',
+                    fontWeight: 600,
+                    color: '#BF4408',
+                    cursor: 'pointer',
+                    textDecoration: 'none',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#E65103')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#BF4408')}
+                >
+                  Home
+                </span>
+              </Link>
+              <div
+                className="events-dropdown-trigger"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (moreDropdownOpen) setMoreDropdownOpen(false);
+                  setEventsDropdownOpen(!eventsDropdownOpen);
+                }}
+                style={{ position: 'relative' }}
+              >
                 <span
                   style={{
                     fontSize: '16px',
@@ -148,201 +114,177 @@ const Navbar = ({
                   onMouseEnter={(e) => (e.currentTarget.style.color = '#E65103')}
                   onMouseLeave={(e) => (e.currentTarget.style.color = '#BF4408')}
                 >
-                  Home
+                  Events <span style={{ fontSize: '12px' }}>▼</span>
                 </span>
-              </Link>
-            </div>
+                {eventsDropdownOpen && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 8px)',
+                      left: '-128px',
+                      backgroundColor: '#FBFAF9',
+                      border: '1px solid #BF4408',
+                      borderRadius: '8px',
+                      padding: '0.5rem',
+                      boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+                      display: 'flex',
+                      flexDirection: 'row',
+                      justifyContent: 'flex-start',
+                      width: '400px',
+                      zIndex: 999,
+                    }}
+                  >
+                    <Link href="/create-event">
+                      <span
+                        style={{
+                          padding: '0.5rem 1rem',
+                          textDecoration: 'none',
+                          color: '#BF4408',
+                          fontSize: '14px',
+                          fontFamily: 'Titillium Web',
+                          textAlign: 'center',
+                          borderRadius: '6px',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5D1B0')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        Create Event
+                      </span>
+                    </Link>
+                    <Link href="/create-shopping-list">
+                      <span
+                        style={{
+                          padding: '0.5rem 1rem',
+                          textDecoration: 'none',
+                          color: '#BF4408',
+                          fontSize: '14px',
+                          fontFamily: 'Titillium Web',
+                          textAlign: 'center',
+                          borderRadius: '6px',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5D1B0')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        Shopping List
+                      </span>
+                    </Link>
+                    <Link href="/create-group">
+                      <span
+                        style={{
+                          padding: '0.5rem 1rem',
+                          textDecoration: 'none',
+                          color: '#BF4408',
+                          fontSize: '14px',
+                          fontFamily: 'Titillium Web',
+                          textAlign: 'center',
+                          borderRadius: '6px',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5D1B0')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        Create Invitations
+                      </span>
+                    </Link>
+                  </div>
+                )}
+              </div>
 
-            <div
-              className="events-dropdown-trigger"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (moreDropdownOpen) setMoreDropdownOpen(false);
-                setEventsDropdownOpen(!eventsDropdownOpen);
-              }}
-              style={{ position: 'relative' }}
-            >
-              <span
-                style={{
-                  fontSize: '16px',
-                  fontFamily: 'Titillium Web',
-                  fontWeight: 600,
-                  color: '#BF4408',
-                  cursor: 'pointer',
+              <div
+                className="more-dropdown-trigger"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (eventsDropdownOpen) setEventsDropdownOpen(false);
+                  setMoreDropdownOpen(!moreDropdownOpen);
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#E65103')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = '#BF4408')}
+                style={{ position: 'relative' }}
               >
-                Events <span style={{ fontSize: '12px' }}>▼</span>
-              </span>
-              {eventsDropdownOpen && (
-                <div
+                <span
                   style={{
-                    position: 'absolute',
-                    top: 'calc(100% + 8px)',
-                    left: '-64px',
-                    backgroundColor: '#FBFAF9',
-                    border: '1px solid #BF4408',
-                    borderRadius: '8px',
-                    padding: '0.5rem',
-                    boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
-                    display: 'flex',
-                    flexDirection: 'row',
-                    justifyContent: 'flex-start',
-                    width: '400px',
-                    zIndex: 999,
+                    fontSize: '16px',
+                    fontFamily: 'Titillium Web',
+                    fontWeight: 600,
+                    color: '#BF4408',
+                    cursor: 'pointer',
                   }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#E65103')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = '#BF4408')}
                 >
-                  <Link href="/create-event">
-                    <span
-                      style={{
-                        padding: '0.5rem 1rem',
-                        textDecoration: 'none',
-                        color: '#BF4408',
-                        fontSize: '14px',
-                        fontFamily: 'Titillium Web',
-                        textAlign: 'center',
-                        borderRadius: '6px',
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5D1B0')}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                    >
-                      Create Event
-                    </span>
-                  </Link>
-                  <Link href="/create-shopping-list">
-                    <span
-                      style={{
-                        padding: '0.5rem 1rem',
-                        textDecoration: 'none',
-                        color: '#BF4408',
-                        fontSize: '14px',
-                        fontFamily: 'Titillium Web',
-                        textAlign: 'center',
-                        borderRadius: '6px',
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5D1B0')}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                    >
-                      Shopping List
-                    </span>
-                  </Link>
-                  <Link href="/create-group">
-                    <span
-                      style={{
-                        padding: '0.5rem 1rem',
-                        textDecoration: 'none',
-                        color: '#BF4408',
-                        fontSize: '14px',
-                        fontFamily: 'Titillium Web',
-                        textAlign: 'center',
-                        borderRadius: '6px',
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5D1B0')}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                    >
-                      Create Invitations
-                    </span>
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            <div
-              className="more-dropdown-trigger"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (eventsDropdownOpen) setEventsDropdownOpen(false);
-                setMoreDropdownOpen(!moreDropdownOpen);
-              }}
-              style={{ position: 'relative' }}
-            >
-              <span
-                style={{
-                  fontSize: '16px',
-                  fontFamily: 'Titillium Web',
-                  fontWeight: 600,
-                  color: '#BF4408',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#E65103')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = '#BF4408')}
-              >
-                More <span style={{ fontSize: '12px' }}>▼</span>
-              </span>
-              {moreDropdownOpen && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 'calc(100% + 8px)',
-                    left: '-128px',
-                    backgroundColor: '#FBFAF9',
-                    border: '1px solid #BF4408',
-                    borderRadius: '8px',
-                    padding: '0.5rem',
-                    boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
-                    display: 'flex',
-                    flexDirection: 'row',
-                    justifyContent: 'flex-start',
-                    width: '400px',
-                    zIndex: 999,
-                  }}
-                >
-                  <Link href="/pending-events">
-                    <span
-                      style={{
-                        padding: '0.5rem 1rem',
-                        textDecoration: 'none',
-                        color: '#BF4408',
-                        fontSize: '14px',
-                        fontFamily: 'Titillium Web',
-                        textAlign: 'center',
-                        borderRadius: '6px',
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5D1B0')}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                    >
-                      Pending Events
-                    </span>
-                  </Link>
-                  <Link href="/reports">
-                    <span
-                      style={{
-                        padding: '0.5rem 1rem',
-                        textDecoration: 'none',
-                        color: '#BF4408',
-                        fontSize: '14px',
-                        fontFamily: 'Titillium Web',
-                        textAlign: 'center',
-                        borderRadius: '6px',
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5D1B0')}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                    >
-                      Reporting
-                    </span>
-                  </Link>
-                  <Link href="/profile">
-                    <span
-                      style={{
-                        padding: '0.5rem 1rem',
-                        textDecoration: 'none',
-                        color: '#BF4408',
-                        fontSize: '14px',
-                        fontFamily: 'Titillium Web',
-                        textAlign: 'center',
-                        borderRadius: '6px',
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5D1B0')}
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                    >
-                      Profile
-                    </span>
-                  </Link>
-                </div>
-              )}
-            </div>
-          </nav>
+                  More <span style={{ fontSize: '12px' }}>▼</span>
+                </span>
+                {moreDropdownOpen && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 8px)',
+                      left: '-128px',
+                      backgroundColor: '#FBFAF9',
+                      border: '1px solid #BF4408',
+                      borderRadius: '8px',
+                      padding: '0.5rem',
+                      boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+                      display: 'flex',
+                      flexDirection: 'row',
+                      justifyContent: 'flex-start',
+                      width: '400px',
+                      zIndex: 999,
+                    }}
+                  >
+                    <Link href="/pending-events">
+                      <span
+                        style={{
+                          padding: '0.5rem 1rem',
+                          textDecoration: 'none',
+                          color: '#BF4408',
+                          fontSize: '14px',
+                          fontFamily: 'Titillium Web',
+                          textAlign: 'center',
+                          borderRadius: '6px',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5D1B0')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        Pending Events
+                      </span>
+                    </Link>
+                    <Link href="/reports">
+                      <span
+                        style={{
+                          padding: '0.5rem 1rem',
+                          textDecoration: 'none',
+                          color: '#BF4408',
+                          fontSize: '14px',
+                          fontFamily: 'Titillium Web',
+                          textAlign: 'center',
+                          borderRadius: '6px',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5D1B0')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        Reporting
+                      </span>
+                    </Link>
+                    <Link href="/profile">
+                      <span
+                        style={{
+                          padding: '0.5rem 1rem',
+                          textDecoration: 'none',
+                          color: '#BF4408',
+                          fontSize: '14px',
+                          fontFamily: 'Titillium Web',
+                          textAlign: 'center',
+                          borderRadius: '6px',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F5D1B0')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        Profile
+                      </span>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </nav>
+          </div>
 
           <div style={{ gap: '16px', display: 'flex', alignItems: 'center' }}>
             {showNotificationAnimation && <RocketAnimation message="You’ve got a notification" />}
@@ -359,7 +301,7 @@ const Navbar = ({
                     cursor: 'pointer',
                     fontSize: '14px',
                   }}
-                  onClick={() => router.push('/sign-up')}
+                  onClick={() => Router.push('/sign-up')}
                   onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')}
                   onMouseLeave={(e) => (e.currentTarget.style.color = '#191818')}
                 >
@@ -476,14 +418,6 @@ const Navbar = ({
       </div>
     </header>
   );
-};
-
-Navbar.propTypes = {
-  imageAlt: PropTypes.string,
-  imageSrc: PropTypes.string,
-  setIsModalOpen: PropTypes.func,
-  user: PropTypes.object,
-  setUser: PropTypes.func,
 };
 
 export default Navbar;

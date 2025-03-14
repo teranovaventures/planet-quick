@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { NextIntlClientProvider } from 'next-intl';
 import Navbar from '../components/navbar';
 import Modal from '../components/modal';
 import '../pages/style.css';
@@ -40,11 +41,11 @@ function MyApp({ Component, pageProps }) {
   const handleLogin = (userData) => {
     setUser(userData);
     try {
-      localStorage.setItem('user', JSON.stringify(userData)); // Persist session
+      localStorage.setItem('user', JSON.stringify(userData));
     } catch (error) {
       console.error("Error saving user to localStorage:", error);
     }
-    setIsModalOpen(false); // Close modal after login
+    setIsModalOpen(false);
   };
 
   const clearNotifications = () => {
@@ -55,7 +56,7 @@ function MyApp({ Component, pageProps }) {
   };
 
   return (
-    <>
+    <NextIntlClientProvider locale="en" messages={pageProps.messages}>
       <Navbar
         user={user}
         setUser={setUser}
@@ -66,8 +67,16 @@ function MyApp({ Component, pageProps }) {
       />
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onLogin={handleLogin} />
       <Component {...pageProps} user={user} setUser={setUser} setIsModalOpen={setIsModalOpen} />
-    </>
+    </NextIntlClientProvider>
   );
+}
+
+export async function getServerSideProps({ locale }) {
+  return {
+    props: {
+      messages: (await import(`../locales/${locale}.json`)).default,
+    },
+  };
 }
 
 export default MyApp;
